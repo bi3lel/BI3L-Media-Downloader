@@ -32,8 +32,8 @@
 
 Abra a página de [Releases](../../releases/latest) e escolha uma opção:
 
-- **ZIP portátil:** pequeno; extraia a pasta e abra `BI3L Media Downloader.exe`. Requer Python 3.11 ou mais recente e internet na primeira execução para preparar as dependências.
-- **Setup offline:** quando incluído na Release, instala o programa completo sem precisar de Python ou internet durante a instalação. Os downloads de mídia ainda precisam de conexão.
+- **`BI3L.Media.Downloader.zip`:** pacote portátil pequeno; extraia a pasta e abra `BI3L Media Downloader.exe`. Requer Python 3.11 ou mais recente e internet na primeira execução para preparar as dependências.
+- **`BI3L.Media.Downloader.Setup.exe`:** instalador offline completo, sem precisar de Python ou internet durante a instalação. Os downloads de mídia ainda precisam de conexão.
 
 O Windows pode exibir “Editor desconhecido” enquanto o executável não possuir assinatura digital. Confira o hash SHA-256 publicado na mesma Release.
 

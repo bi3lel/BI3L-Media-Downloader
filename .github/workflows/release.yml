@@ -50,17 +50,14 @@ jobs:
           exit 0
 
       - name: Install runtime packages
-        if: steps.version.outputs.exists == 'false'
         run: python -m pip install --disable-pip-version-check -r requirements.txt
 
       - name: Run tests
-        if: steps.version.outputs.exists == 'false'
         run: |
           python -m unittest test_core.py test_playlist_stream.py
           python -m py_compile app.py core.py i18n.py strip_audio.py
 
       - name: Compile portable launcher
-        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         run: |
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -82,17 +79,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Package portable ZIP
-        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         run: |
           $app = "release-stage\BI3L Media Downloader\App"
           Copy-Item app.py, core.py, i18n.py, strip_audio.py, requirements.txt, setup.bat, run.bat, README.md -Destination $app
           Copy-Item assets -Destination $app -Recurse
           New-Item -ItemType Directory -Force -Path release-output | Out-Null
-          Compress-Archive -Path "release-stage\BI3L Media Downloader" -DestinationPath "release-output\BI3L Media Downloader.zip" -CompressionLevel Optimal
+          Compress-Archive -Path "release-stage\BI3L Media Downloader" -DestinationPath "release-output\BI3L.Media.Downloader.zip" -CompressionLevel Optimal
 
       - name: Prepare offline builder
-        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         run: |
           $app = "offline_builder\App"
@@ -101,44 +96,57 @@ jobs:
           Copy-Item assets -Destination $app -Recurse
 
       - name: Install Inno Setup
-        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         run: choco install innosetup --yes --no-progress
 
       - name: Build offline installer
-        if: steps.version.outputs.exists == 'false'
         shell: cmd
         env:
           CI: "1"
         run: call "offline_builder\Build Offline Installer.bat"
 
       - name: Generate SHA-256 checksums
-        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         run: |
-          $portable = "release-output\BI3L Media Downloader.zip"
-          $installer = "offline_builder\Output\BI3L Media Downloader Setup.exe"
+          $portable = "release-output\BI3L.Media.Downloader.zip"
+          $installer = "release-output\BI3L.Media.Downloader.Setup.exe"
+          Copy-Item "offline_builder\Output\BI3L Media Downloader Setup.exe" -Destination $installer
           $portableHash = (Get-FileHash $portable -Algorithm SHA256).Hash.ToLower()
           $installerHash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
           $lines = @(
-            "$portableHash  BI3L Media Downloader.zip"
-            "$installerHash  BI3L Media Downloader Setup.exe"
+            "$portableHash  BI3L.Media.Downloader.zip"
+            "$installerHash  BI3L.Media.Downloader.Setup.exe"
           )
           $lines | Set-Content "release-output\SHA256SUMS.txt" -Encoding ascii
 
       - name: Publish GitHub Release
-        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release create $env:RELEASE_TAG `
-            "release-output\BI3L Media Downloader.zip" `
-            "offline_builder\Output\BI3L Media Downloader Setup.exe" `
-            "release-output\SHA256SUMS.txt" `
-            --repo $env:GITHUB_REPOSITORY `
-            --title "BI3L Media Downloader $env:RELEASE_VERSION" `
-            --notes-file RELEASE_NOTES.md `
-            --latest
+          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:RELEASE_TAG `
+              "release-output\BI3L.Media.Downloader.zip" `
+              "release-output\BI3L.Media.Downloader.Setup.exe" `
+              "release-output\SHA256SUMS.txt" `
+              --repo $env:GITHUB_REPOSITORY `
+              --clobber
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            gh release edit $env:RELEASE_TAG `
+              --repo $env:GITHUB_REPOSITORY `
+              --title "BI3L Media Downloader $env:RELEASE_VERSION" `
+              --notes-file RELEASE_NOTES.md `
+              --latest
+          } else {
+            gh release create $env:RELEASE_TAG `
+              "release-output\BI3L.Media.Downloader.zip" `
+              "release-output\BI3L.Media.Downloader.Setup.exe" `
+              "release-output\SHA256SUMS.txt" `
+              --repo $env:GITHUB_REPOSITORY `
+              --title "BI3L Media Downloader $env:RELEASE_VERSION" `
+              --notes-file RELEASE_NOTES.md `
+              --latest
+          }

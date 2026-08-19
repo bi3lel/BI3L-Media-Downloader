@@ -21,8 +21,8 @@ Use it only for content you own, public-domain content, or media you have permis
 
 Open [Releases](../../releases/latest):
 
-- **Portable ZIP:** extract it and run `BI3L Media Downloader.exe`. Python 3.11+ and a first-run internet connection are required.
-- **Offline Setup:** when attached to a Release, it installs a self-contained build without requiring Python or internet during installation.
+- **`BI3L.Media.Downloader.zip`:** extract it and run `BI3L Media Downloader.exe`. Python 3.11+ and a first-run internet connection are required.
+- **`BI3L.Media.Downloader.Setup.exe`:** installs a self-contained build without requiring Python or internet during installation.
 
 The default download directory is `%USERPROFILE%\Downloads\BI3L Media Downloader` and can be changed in Settings.
 

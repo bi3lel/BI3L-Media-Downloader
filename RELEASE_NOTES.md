@@ -15,8 +15,8 @@
 
 ## Downloads
 
-- `BI3L Media Downloader.zip`: pacote portátil pequeno com launcher do Windows.
-- `BI3L Media Downloader Setup.exe`: instalador offline, quando anexado.
+- `BI3L.Media.Downloader.zip`: pacote portátil pequeno com launcher do Windows.
+- `BI3L.Media.Downloader.Setup.exe`: instalador offline completo.
 - `SHA256SUMS.txt`: hashes para verificar os arquivos publicados.
 
 Leia o README, os avisos de privacidade e os componentes de terceiros antes de redistribuir.
