@@ -50,14 +50,17 @@ jobs:
           exit 0
 
       - name: Install runtime packages
+        if: steps.version.outputs.exists == 'false'
         run: python -m pip install --disable-pip-version-check -r requirements.txt
 
       - name: Run tests
+        if: steps.version.outputs.exists == 'false'
         run: |
           python -m unittest test_core.py test_playlist_stream.py
           python -m py_compile app.py core.py i18n.py strip_audio.py
 
       - name: Compile portable launcher
+        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         run: |
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -79,6 +82,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Package portable ZIP
+        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         run: |
           $app = "release-stage\BI3L Media Downloader\App"
@@ -88,6 +92,7 @@ jobs:
           Compress-Archive -Path "release-stage\BI3L Media Downloader" -DestinationPath "release-output\BI3L.Media.Downloader.zip" -CompressionLevel Optimal
 
       - name: Prepare offline builder
+        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         run: |
           $app = "offline_builder\App"
@@ -96,16 +101,19 @@ jobs:
           Copy-Item assets -Destination $app -Recurse
 
       - name: Install Inno Setup
+        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         run: choco install innosetup --yes --no-progress
 
       - name: Build offline installer
+        if: steps.version.outputs.exists == 'false'
         shell: cmd
         env:
           CI: "1"
         run: call "offline_builder\Build Offline Installer.bat"
 
       - name: Generate SHA-256 checksums
+        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         run: |
           $portable = "release-output\BI3L.Media.Downloader.zip"
@@ -120,6 +128,7 @@ jobs:
           $lines | Set-Content "release-output\SHA256SUMS.txt" -Encoding ascii
 
       - name: Publish GitHub Release
+        if: steps.version.outputs.exists == 'false'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
