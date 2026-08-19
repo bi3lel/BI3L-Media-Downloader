@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Downloaded tools and generated output
+tools/
+Output/
+_build/
+dist/
+build/*.res
+*.spec
+*.pdb
+*.exe
+
+# Local application data
+settings.json
+downloads/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
