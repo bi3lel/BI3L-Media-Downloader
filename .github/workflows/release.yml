@@ -47,6 +47,7 @@ jobs:
           } else {
             "exists=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           }
+          exit 0
 
       - name: Install runtime packages
         if: steps.version.outputs.exists == 'false'
@@ -60,14 +61,25 @@ jobs:
 
       - name: Compile portable launcher
         if: steps.version.outputs.exists == 'false'
-        shell: cmd
+        shell: pwsh
         run: |
-          mkdir "release-stage\BI3L Media Downloader\App"
-          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          pushd build
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vcvars = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find "VC\Auxiliary\Build\vcvars64.bat" | Select-Object -First 1
+          if (-not $vcvars) { throw "Visual C++ build tools were not found." }
+
+          New-Item -ItemType Directory -Force -Path "release-stage\BI3L Media Downloader\App" | Out-Null
+          $compileScript = @"
+          @echo off
+          call "$vcvars"
+          if errorlevel 1 exit /b 1
+          cd /d "$env:GITHUB_WORKSPACE\build"
           rc /nologo /fo launcher.res launcher.rc
-          cl /nologo /O2 /MT /DUNICODE /D_UNICODE launcher.c launcher.res /Fe:"..\release-stage\BI3L Media Downloader\BI3L Media Downloader.exe" /link /SUBSYSTEM:WINDOWS user32.lib shell32.lib
-          popd
+          if errorlevel 1 exit /b 1
+          cl /nologo /O2 /MT /DUNICODE /D_UNICODE launcher.c launcher.res /Fe:"$env:GITHUB_WORKSPACE\release-stage\BI3L Media Downloader\BI3L Media Downloader.exe" /link /SUBSYSTEM:WINDOWS user32.lib shell32.lib
+          "@
+          $compileScript | Set-Content "$env:RUNNER_TEMP\compile-launcher.cmd" -Encoding ascii
+          & cmd.exe /d /c "$env:RUNNER_TEMP\compile-launcher.cmd"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Package portable ZIP
         if: steps.version.outputs.exists == 'false'
