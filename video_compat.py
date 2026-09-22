@@ -1,0 +1,73 @@
+"""Convert downloaded MP4 streams to an editor-friendly encoding."""
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+from strip_audio import _ffmpeg_path
+
+
+def make_editor_mp4(source: Path, *, silent: bool = False) -> int:
+    """Replace only after successful conversion; keep the download on failure."""
+    source = source.resolve()
+    temporary: Path | None = None
+    try:
+        if not source.is_file():
+            raise OSError(f"Video not found: {source}")
+        ffmpeg = _ffmpeg_path()
+        # Same directory guarantees atomic replacement, even if the download
+        # workspace and destination are on different drives.
+        handle, name = tempfile.mkstemp(prefix=".bi3l-convert-", suffix=".mp4", dir=source.parent)
+        os.close(handle)
+        temporary = Path(name)
+        command = [
+            ffmpeg, "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+            "-i", str(source), "-map", "0:v:0",
+            "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+            "-profile:v", "high", "-pix_fmt", "yuv420p",
+            "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+            "-fps_mode", "cfr", "-tag:v", "avc1",
+        ]
+        if silent:
+            command += ["-an"]
+        else:
+            command += ["-map", "0:a:0?", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2"]
+        command += ["-map_metadata", "0", "-movflags", "+faststart", str(temporary)]
+        print("[EditorMP4] Converting video for editing...", flush=True)
+        completed = subprocess.run(
+            command,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+        )
+        if completed.returncode:
+            raise RuntimeError(completed.stderr.strip() or "FFmpeg conversion failed")
+        if not temporary.is_file() or temporary.stat().st_size == 0:
+            raise RuntimeError("FFmpeg produced an empty video")
+        os.replace(temporary, source)
+        return 0
+    except (OSError, RuntimeError) as exc:
+        print(f"ERROR: MP4 conversion failed; original download kept. {exc}", file=sys.stderr, flush=True)
+        return 1
+    finally:
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--silent", action="store_true")
+    parser.add_argument("source", type=Path)
+    args = parser.parse_args()
+    raise SystemExit(make_editor_mp4(args.source, silent=args.silent))

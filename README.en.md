@@ -26,6 +26,14 @@ Open [Releases](../../releases/latest):
 
 The default download directory is `%USERPROFILE%\Downloads\BI3L Media Downloader` and can be changed in Settings.
 
+## MP4 compatibility with VEGAS and other editors
+
+MP4 downloads are now converted automatically to H.264 High profile, 8-bit 4:2:0 video with constant frame rate and AAC-LC stereo audio at 48 kHz. Silent downloads use the same video conversion without an audio track. This also applies to direct links and playlists.
+
+An MP4 extension alone does not guarantee compatible codecs: older downloads could contain AV1, VP9 or Opus. Version 2.4.1 converts the streams even when the source is already MP4. Conversion takes extra time, needs space for a second copy, and may increase file size; it uses high-quality lossy encoding (CRF 18). Wait for the conversion stage to finish. If it fails, the original download is kept and an error is shown.
+
+Previously downloaded files are not changed automatically. Download them again with this version, or back up an existing MP4 and run `python video_compat.py "path/to/video.mp4"` from the source installation. Add `--silent` to remove audio. Very old editors may still have resolution/frame-rate limits; choose a lower download quality if needed. HDR-to-SDR tone mapping is not included.
+
 ## Spotify note
 
 The application does not download or decrypt protected Spotify audio. It reads public link metadata and searches for a matching public source supported by yt-dlp.

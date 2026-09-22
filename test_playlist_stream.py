@@ -104,7 +104,7 @@ class PlaylistStreamTests(unittest.TestCase):
         self.assertEqual(result["title"], "Single video")
         self.assertTrue(downloader.events.empty())
 
-    def test_silent_mp4_uses_video_format_and_audio_strip_helper(self):
+    def test_silent_mp4_uses_video_format_and_compatibility_helper(self):
         downloader = MediaDownloader.__new__(MediaDownloader)
         downloader.language = "en"
         downloader._find_yt_dlp = lambda: "yt-dlp"
@@ -121,10 +121,11 @@ class PlaylistStreamTests(unittest.TestCase):
         self.assertEqual(command[command.index("-f") + 1], "bv*[height<=1080]")
         self.assertIn("--remux-video", command)
         exec_value = command[command.index("--exec") + 1]
-        self.assertIn("strip_audio.py", exec_value)
+        self.assertIn("video_compat.py", exec_value)
+        self.assertIn("--silent", exec_value)
         self.assertNotIn("+ba", " ".join(command))
 
-    def test_frozen_app_uses_internal_audio_strip_mode(self):
+    def test_frozen_app_uses_internal_mp4_conversion_mode(self):
         downloader = MediaDownloader.__new__(MediaDownloader)
         downloader.language = "en"
         downloader._find_yt_dlp = lambda: "yt-dlp"
@@ -140,8 +141,42 @@ class PlaylistStreamTests(unittest.TestCase):
             )
 
         exec_value = command[command.index("--exec") + 1]
-        self.assertIn("--strip-audio", exec_value)
-        self.assertNotIn("strip_audio.py", exec_value)
+        self.assertIn("--editor-mp4", exec_value)
+        self.assertIn("--silent", exec_value)
+        self.assertNotIn("video_compat.py", exec_value)
+
+    def test_all_mp4_routes_convert_but_mp3_does_not(self):
+        downloader = MediaDownloader.__new__(MediaDownloader)
+        downloader._find_yt_dlp = lambda: "yt-dlp"
+        downloader._js_runtime_arguments = lambda: []
+        downloader._ffmpeg_arguments = lambda: []
+        for direct in (False, True):
+            for playlist in (False, True):
+                with self.subTest(direct=direct, playlist=playlist):
+                    command = downloader._download_command(
+                        "https://example.com/video", "MP4", DownloadSettings(),
+                        direct_media=direct, is_playlist=playlist,
+                    )
+                    self.assertIn("--remux-video", command)
+                    self.assertNotIn("--ignore-errors", command)
+                    helper = command[command.index("--exec") + 1]
+                    self.assertTrue(helper.startswith("after_move:"))
+                    self.assertIn("video_compat.py", helper)
+                    self.assertNotIn("--silent", helper)
+        command = downloader._download_command("https://example.com/audio", "MP3", DownloadSettings())
+        self.assertNotIn("--exec", command)
+
+    def test_conversion_failure_is_reported_to_user(self):
+        downloader = MediaDownloader.__new__(MediaDownloader)
+        downloader.cancel_event = threading.Event()
+        downloader.events = queue.Queue()
+        downloader.language = "en"
+        process = FakeProcess(["[EditorMP4] Converting video for editing...\n", "ERROR: MP4 conversion failed\n"])
+        process.wait = lambda: 1
+        with patch("app.subprocess.Popen", return_value=process):
+            with self.assertRaisesRegex(RuntimeError, "conversion failed"):
+                downloader._run_yt_dlp_once(["yt-dlp"])
+        self.assertEqual(downloader.events.get()[0], "status")
 
     def test_engine_selector_prefers_the_newest_available_version(self):
         downloader = MediaDownloader.__new__(MediaDownloader)

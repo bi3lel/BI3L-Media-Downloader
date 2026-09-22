@@ -1,4 +1,16 @@
-# BI3L Media Downloader v2.4.0
+# BI3L Media Downloader v2.4.1
+
+## Correção de compatibilidade MP4 / VEGAS
+
+- Conversão automática para H.264 High de 8 bits (4:2:0), taxa de quadros constante e áudio AAC-LC estéreo a 48 kHz.
+- Corrige downloads MP4 que continham VP9, AV1, Opus ou vídeo de 10 bits e não abriam em alguns editores.
+- Inclui MP4 sem áudio, playlists e links diretos; MP3 permanece inalterado.
+- Preserva o download original se a conversão falhar e mostra o erro.
+- A conversão requer tempo e espaço adicionais. Baixe novamente os vídeos antigos para aplicar a correção.
+
+## MP4 / VEGAS compatibility fix
+
+All MP4 downloads now convert to 8-bit H.264 video with constant frame rate and AAC stereo audio. This fixes the previous container-only merge that could leave unsupported codecs inside an MP4. Silent videos, direct links and playlists are covered. Conversion takes extra time and disk space; old downloads must be downloaded again or converted with the source helper. The original is preserved if conversion fails.
 
 ## Destaques
 

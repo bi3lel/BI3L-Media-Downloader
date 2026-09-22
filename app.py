@@ -22,6 +22,7 @@ from PIL import Image
 
 from i18n import LANGUAGE_NAMES, localize_known_error, translate
 from strip_audio import strip_audio
+from video_compat import make_editor_mp4
 
 from core import (
     APP_DISPLAY_NAME,
@@ -2129,7 +2130,7 @@ class MediaDownloader(ctk.CTk):
         ]
 
         if is_playlist:
-            command.extend(["--yes-playlist", "--no-flat-playlist", "--ignore-errors"])
+            command.extend(["--yes-playlist", "--no-flat-playlist", "--no-abort-on-error"])
             if playlist_items:
                 command.extend(["--playlist-items", ",".join(str(index) for index in playlist_items)])
 
@@ -2138,8 +2139,15 @@ class MediaDownloader(ctk.CTk):
             bitrate = re.search(r"(\d+)", settings.audio_quality)
             command.extend(["--audio-quality", f"{bitrate.group(1)}K" if bitrate else "0"])
         else:
+            command.extend(["--remux-video", "mp4", "--merge-output-format", "mp4"])
+            if getattr(sys, "frozen", False):
+                helper_parts = [sys.executable, "--editor-mp4"]
+            else:
+                helper_parts = [sys.executable, str(Path(__file__).resolve().parent / "video_compat.py")]
             if settings.video_no_audio:
-                command.extend(["--remux-video", "mp4"])
+                helper_parts.append("--silent")
+            command.extend(["--exec", f"after_move:{subprocess.list2cmdline(helper_parts)} %(filepath)q"])
+            if settings.video_no_audio:
                 if not direct_media:
                     height = re.search(r"(\d+)", settings.video_quality)
                     selector = (
@@ -2148,26 +2156,7 @@ class MediaDownloader(ctk.CTk):
                         else "bv*"
                     )
                     command.extend(["-f", selector])
-                if getattr(sys, "frozen", False):
-                    helper_parts = [sys.executable, "--strip-audio"]
-                else:
-                    helper = Path(__file__).resolve().parent / "strip_audio.py"
-                    helper_parts = [sys.executable, str(helper)]
-                helper_command = subprocess.list2cmdline(helper_parts)
-                temp_argument = (
-                    subprocess.list2cmdline([self.active_temp_dir])
-                    if str(getattr(self, "active_temp_dir", "") or "")
-                    else ""
-                )
-                command.extend(
-                    [
-                        "--exec",
-                        f"after_move:{helper_command} %(filepath)q"
-                        + (f" {temp_argument}" if temp_argument else ""),
-                    ]
-                )
             elif not direct_media:
-                command.extend(["--merge-output-format", "mp4"])
                 height = re.search(r"(\d+)", settings.video_quality)
                 if height:
                     limit = height.group(1)
@@ -2331,6 +2320,10 @@ class MediaDownloader(ctk.CTk):
                 self.events.put(("status", status))
             elif "ExtractAudio" in line:
                 processing = self._t("download.converting_mp3")
+                status = f"{current_status_base} · {processing}" if current_status_base else processing
+                self.events.put(("status", status))
+            elif "[EditorMP4]" in line:
+                processing = self._t("download.converting_mp4")
                 status = f"{current_status_base} · {processing}" if current_status_base else processing
                 self.events.put(("status", status))
             elif "Fixup" in line or "Post-process" in line:
@@ -2648,6 +2641,14 @@ class MediaDownloader(ctk.CTk):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) >= 2 and sys.argv[1] == "--editor-mp4":
+        import argparse
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--silent", action="store_true")
+        parser.add_argument("source", type=Path)
+        args = parser.parse_args(sys.argv[2:])
+        raise SystemExit(make_editor_mp4(args.source, silent=args.silent))
     if len(sys.argv) in {3, 4} and sys.argv[1] == "--strip-audio":
         workspace = Path(sys.argv[3]) if len(sys.argv) == 4 else None
         raise SystemExit(strip_audio(Path(sys.argv[2]), workspace))

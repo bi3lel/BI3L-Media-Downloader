@@ -56,8 +56,8 @@ jobs:
       - name: Run tests
         if: steps.version.outputs.exists == 'false'
         run: |
-          python -m unittest test_core.py test_playlist_stream.py
-          python -m py_compile app.py core.py i18n.py strip_audio.py
+          python -m unittest test_core.py test_playlist_stream.py test_video_compat.py
+          python -m py_compile app.py core.py i18n.py strip_audio.py video_compat.py
 
       - name: Compile portable launcher
         if: steps.version.outputs.exists == 'false'
@@ -86,7 +86,7 @@ jobs:
         shell: pwsh
         run: |
           $app = "release-stage\BI3L Media Downloader\App"
-          Copy-Item app.py, core.py, i18n.py, strip_audio.py, requirements.txt, setup.bat, run.bat, README.md -Destination $app
+          Copy-Item app.py, core.py, i18n.py, strip_audio.py, video_compat.py, requirements.txt, setup.bat, run.bat, README.md -Destination $app
           Copy-Item assets -Destination $app -Recurse
           New-Item -ItemType Directory -Force -Path release-output | Out-Null
           Compress-Archive -Path "release-stage\BI3L Media Downloader" -DestinationPath "release-output\BI3L.Media.Downloader.zip" -CompressionLevel Optimal
@@ -97,7 +97,7 @@ jobs:
         run: |
           $app = "offline_builder\App"
           New-Item -ItemType Directory -Force -Path $app | Out-Null
-          Copy-Item app.py, core.py, i18n.py, strip_audio.py, requirements.txt, setup.bat, run.bat, README.md -Destination $app
+          Copy-Item app.py, core.py, i18n.py, strip_audio.py, video_compat.py, requirements.txt, setup.bat, run.bat, README.md -Destination $app
           Copy-Item assets -Destination $app -Recurse
 
       - name: Install Inno Setup

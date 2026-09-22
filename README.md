@@ -28,6 +28,14 @@
 - Atualização do mecanismo yt-dlp pelas Configurações
 - Pasta de downloads configurável
 
+## MP4 para VEGAS e outros editores
+
+A versão 2.4.1 converte todos os downloads MP4 para vídeo H.264 High, 8 bits, 4:2:0 e taxa de quadros constante, com áudio AAC-LC estéreo a 48 kHz. A opção sem áudio usa a mesma conversão de vídeo. Também funciona com links diretos e playlists.
+
+Antes, um arquivo `.mp4` podia conter AV1, VP9 ou Opus, incompatíveis com alguns editores. A conversão agora ocorre mesmo quando o arquivo já é MP4. Ela demora mais, precisa de espaço para uma segunda cópia e pode aumentar o tamanho do arquivo. A codificação usa CRF 18, com perda de qualidade pequena. Aguarde a etapa de conversão terminar; em caso de falha, o download original é preservado e um erro é exibido.
+
+Arquivos antigos não são alterados automaticamente: baixe novamente com esta versão ou faça uma cópia de segurança e execute `python video_compat.py "caminho/para/video.mp4"` na instalação pelo código-fonte. Use `--silent` para remover o áudio. Editores antigos ainda podem limitar resolução e taxa de quadros. Não inclui mapeamento de tons HDR para SDR.
+
 ## Instalação
 
 Abra a página de [Releases](../../releases/latest) e escolha uma opção:

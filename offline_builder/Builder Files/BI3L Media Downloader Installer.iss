@@ -1,5 +1,5 @@
 #define MyAppName "BI3L Media Downloader"
-#define MyAppVersion "2.4.0"
+#define MyAppVersion "2.4.1"
 #define MyAppPublisher "BI3L"
 #define MyAppExeName "BI3L Media Downloader.exe"
 #define BuildRoot "..\_build\dist\BI3L Media Downloader"
@@ -9,7 +9,7 @@ AppId={{71BEA777-8026-46B5-91E6-5C1A7B924705}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-VersionInfoVersion=2.4.0.0
+VersionInfoVersion=2.4.1.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Offline Installer
 VersionInfoProductName={#MyAppName}

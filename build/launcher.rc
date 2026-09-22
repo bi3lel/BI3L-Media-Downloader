@@ -4,8 +4,8 @@
 1 24 "launcher.manifest"
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,4,0,0
- PRODUCTVERSION 2,4,0,0
+ FILEVERSION 2,4,1,0
+ PRODUCTVERSION 2,4,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -22,12 +22,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "BI3L\0"
             VALUE "FileDescription", "BI3L Media Downloader\0"
-            VALUE "FileVersion", "2.4.0\0"
+            VALUE "FileVersion", "2.4.1\0"
             VALUE "InternalName", "BI3LMediaDownloader\0"
             VALUE "LegalCopyright", "Copyright (c) 2026 BI3L\0"
             VALUE "OriginalFilename", "BI3L Media Downloader.exe\0"
             VALUE "ProductName", "BI3L Media Downloader\0"
-            VALUE "ProductVersion", "2.4.0\0"
+            VALUE "ProductVersion", "2.4.1\0"
         END
     END
     BLOCK "VarFileInfo"
