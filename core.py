@@ -15,7 +15,7 @@ from typing import Any
 APP_NAME = "BI3L Media Downloader"
 APP_DISPLAY_NAME = APP_NAME
 LEGACY_APP_NAMES = ("Downloader", "MediaDock")
-APP_VERSION = "2.5.0"
+APP_VERSION = "2.6.0"
 
 
 @dataclass

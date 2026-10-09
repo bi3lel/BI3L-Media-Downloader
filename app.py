@@ -236,8 +236,6 @@ class MediaDownloader(ctk.CTk):
             font=ctk.CTkFont(FONT, 21, "bold"),
         ).grid(row=1, column=0)
         input_row = ctk.CTkFrame(card, fg_color="transparent")
-        # Preserve the original input position while moving the supported-sites
-        # helper into the open space directly below the field.
         input_row.grid(row=3, column=0, padx=36, pady=(46, 0), sticky="ew")
         input_row.grid_columnconfigure(0, weight=1)
         self.url_entry = ctk.CTkEntry(
@@ -269,7 +267,7 @@ class MediaDownloader(ctk.CTk):
         self.continue_button.grid(row=0, column=1)
         self.home_status = ctk.CTkLabel(
             card,
-            text=self._t("home.supported"),
+            text="",
             height=38,
             wraplength=540,
             justify="center",
@@ -277,25 +275,6 @@ class MediaDownloader(ctk.CTk):
             font=ctk.CTkFont(FONT, 12),
         )
         self.home_status.grid(row=4, column=0, pady=(7, 0))
-
-        chips = ctk.CTkFrame(card, fg_color="transparent")
-        chips.grid(row=5, column=0, pady=(4, 0))
-        for index, label in enumerate(("YouTube", "Instagram", "TikTok", "Twitch", "X", "Spotify", "Google Drive", self._t("platform.website"))):
-            row, column = divmod(index, 4)
-            icon = self._platform_icon(label)
-            ctk.CTkLabel(
-                chips,
-                text=f"  {label}" if icon else label,
-                image=icon,
-                compound="left",
-                width=125,
-                height=34,
-                padx=9,
-                corner_radius=17,
-                fg_color=SURFACE,
-                text_color=MUTED,
-                font=ctk.CTkFont(FONT, 11),
-            ).grid(row=row, column=column, padx=4, pady=4)
 
         entry = self.url_entry
         self.after(150, lambda: entry.focus_set() if entry.winfo_exists() else None)
@@ -2789,7 +2768,7 @@ class MediaDownloader(ctk.CTk):
         self.destroy()
 
 
-if __name__ == "__main__":
+def dispatch_helper() -> None:
     if len(sys.argv) >= 2 and sys.argv[1] == "--drive-download":
         from drive_support import main as drive_main
         raise SystemExit(drive_main(sys.argv[2:]))
@@ -2804,5 +2783,9 @@ if __name__ == "__main__":
     if len(sys.argv) in {3, 4} and sys.argv[1] == "--strip-audio":
         workspace = Path(sys.argv[3]) if len(sys.argv) == 4 else None
         raise SystemExit(strip_audio(Path(sys.argv[2]), workspace))
-    configure_windows_app_identity()
-    MediaDownloader().mainloop()
+
+
+if __name__ == "__main__":
+    dispatch_helper()
+    from desktop_web import main
+    main()

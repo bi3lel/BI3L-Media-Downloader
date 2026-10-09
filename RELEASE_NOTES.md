@@ -1,23 +1,25 @@
-# BI3L Media Downloader v2.5.0
+# BI3L Media Downloader v2.6.0
 
 ## English
 
-- Browse public Google Drive folders before downloading. Select individual files; preserve original formats and nested paths, without overwriting existing files.
-- Public media pages and direct URLs work beyond the home-screen examples. Accept streams whose resolution metadata is missing.
-- Detect working NVIDIA, Intel and AMD H.264 encoders with a real probe. Fall back to faster CPU conversion if unavailable or if a video fails on GPU.
-- Fix same-title Spotify mismatches: resolve track metadata by ID, compare artist/title/duration/version and prompt for uncertain candidates instead of blindly downloading the first result. Applies to tracks, playlists and albums.
-- Keep editor-compatible H.264/AAC output. No Google sign-in or protected Spotify audio downloads.
+- New charcoal/red interface based on the supplied redesign, preserving the original BI3L logo and title.
+- Settings cogwheel at the bottom left. The destination folder appears only in Settings, with centered controls and a full-width folder picker.
+- Working native Windows minimize, maximize/restore and close buttons at the top right, with the standard Windows frame for drag-to-restore, snapping and edge resizing.
+- Real downloads, multi-link queues, playlist/Drive file selection, progress, cancellation and Spotify source choices connected to the new interface.
+- Retains editor-compatible H.264 8-bit 4:2:0 video, constant frame rate and AAC audio, with detected NVIDIA/Intel/AMD encoding and CPU fallback.
+- Windows installer includes the Microsoft WebView2 offline prerequisite and installs it only when missing. Source/portable mode requires WebView2 to be installed.
 
 ## Português (Brasil)
 
-- Liste pastas públicas do Google Drive e selecione arquivos antes de baixar. Mantém formato original e subpastas, sem sobrescrever arquivos existentes.
-- Suporte a páginas e URLs públicas de mídia além dos exemplos da tela inicial, inclusive sem resolução informada.
-- Detecta encoders H.264 NVIDIA, Intel e AMD com teste real; fallback automático para CPU mais rápida.
-- Spotify: confere ID, artista, título, duração e versão. Correspondências incertas exigem seleção, também em playlists e álbuns.
-- Mantém H.264/AAC compatível com editores. Sem login Google ou download de áudio protegido do Spotify.
+- Nova interface escura/vermelha com o logo e o nome originais BI3L.
+- Engrenagem no canto inferior esquerdo; pasta de destino apenas nas Configurações, com controles centralizados e seletor de pasta amplo.
+- Botões nativos de minimizar, maximizar/restaurar e fechar no canto superior direito; barra de título padrão do Windows, com restauração ao arrastar, encaixe e redimensionamento pelas bordas.
+- Downloads reais, filas, playlists, seleção de arquivos do Drive, cancelamento e escolha de fontes do Spotify.
+- Mantém conversão MP4 H.264/AAC para edição, detecção de GPU e fallback para CPU.
+- Instalador inclui o WebView2 para instalação offline quando necessário.
 
 ## Downloads
 
-- `BI3L.Media.Downloader.zip`: portable launcher (Python and first-run internet required).
-- `BI3L.Media.Downloader.Setup.exe`: self-contained Windows installer.
-- `SHA256SUMS.txt`: published download checksums.
+- `BI3L.Media.Downloader.Setup.exe`: complete Windows installer, including WebView2 when needed.
+- `BI3L.Media.Downloader.zip`: portable launcher; Python 3.11+, WebView2 and first-run internet required. Node.js is not required for release downloads.
+- `SHA256SUMS.txt`: download checksums.

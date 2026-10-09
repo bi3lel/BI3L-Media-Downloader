@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+node_modules/
 
 # Downloaded tools and generated output
 tools/

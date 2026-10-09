@@ -6,6 +6,10 @@ A simple Windows media downloader with a dark interface available in English and
 
 Use it only for content you own, public-domain content, or media you have permission to save. Respect platform terms and applicable law.
 
+## New interface in 2.6.0
+
+The original BI3L logo and title are preserved. Settings are opened by the cogwheel at the bottom left; the destination folder is shown only inside the centered Settings dialog. Native minimize, maximize/restore and close controls are at the top right. The new interface supports the existing queue, Drive, playlist, Spotify and conversion features.
+
 ## Highlights
 
 - YouTube, Instagram, TikTok, Twitch Clips, X, and public Spotify links
@@ -21,16 +25,16 @@ Use it only for content you own, public-domain content, or media you have permis
 
 Open [Releases](../../releases/latest):
 
-- **`BI3L.Media.Downloader.zip`:** extract it and run `BI3L Media Downloader.exe`. Python 3.11+ and a first-run internet connection are required.
+- **`BI3L.Media.Downloader.zip`:** extract it and run `BI3L Media Downloader.exe`. Python 3.11+, Microsoft WebView2 Runtime and a first-run internet connection are required. The release includes the built interface; Node.js is not needed.
 - **`BI3L.Media.Downloader.Setup.exe`:** installs a self-contained build without requiring Python or internet during installation.
 
 The default download directory is `%USERPROFILE%\Downloads\BI3L Media Downloader` and can be changed in Settings.
 
 ## Google Drive and other websites
 
-Paste a public Google Drive file or folder link. Folders are listed without downloading their files; check only the files you want, then Continue and Download. Subfolders keep their relative structure. Drive files are saved in their original format under `Google Drive`, with their IDs in the filenames; existing files are not overwritten. Google documents use the export format provided by gdown. Private/sign-in-only links and Google quota restrictions are not bypassed.
+Paste a public Google Drive file or folder link. Folders are listed without downloading their files; check only the files you want, then Download. Subfolders keep their relative structure. Drive files are saved in their original format under `Google Drive`, with their IDs in the filenames; existing files are not overwritten. Google documents use the export format provided by gdown. Private/sign-in-only links and Google quota restrictions are not bypassed.
 
-The home-screen services are examples, not a whitelist. Other public pages, direct media URLs, and supported HLS/DASH streams are handled by yt-dlp's site extractors and generic extractor. Unknown resolution metadata no longer rejects direct links. Compatibility depends on the website; DRM, login-only content, and sites with no discoverable media are not universally supported.
+The home screen keeps the BI3L logo, heading and URL controls; service icons and explanations are omitted. Service explanations are kept here. Supported sites are not limited to a fixed list. Other public pages, direct media URLs, and supported HLS/DASH streams are handled by yt-dlp's site extractors and generic extractor. Unknown resolution metadata no longer rejects direct links. Compatibility depends on the website; DRM, login-only content, and sites with no discoverable media are not universally supported.
 
 ## Faster MP4 conversion
 
@@ -50,7 +54,7 @@ The application does not download or decrypt protected Spotify audio. It resolve
 
 ## Source
 
-Run `setup.bat`, then `run.bat` on Windows 10/11 with Python 3.11+. See [BUILDING.md](BUILDING.md) for build instructions.
+Run `setup.bat`, then `run.bat` on Windows 10/11 with Python 3.11+, WebView2 and Node.js 22.12+ to build the interface from a source checkout. See [BUILDING.md](BUILDING.md) for build instructions.
 
 This project has no telemetry. See [PRIVACY.md](PRIVACY.md), [DISCLAIMER.md](DISCLAIMER.md), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 

@@ -14,7 +14,7 @@ if "customtkinter" not in sys.modules:
     fake_ctk.CTk = object
     sys.modules["customtkinter"] = fake_ctk
 
-from app import MediaDownloader  # noqa: E402
+from desktop_web import Engine as MediaDownloader  # noqa: E402
 from core import DownloadSettings  # noqa: E402
 from i18n import translate  # noqa: E402
 

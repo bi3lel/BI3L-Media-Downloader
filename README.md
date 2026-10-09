@@ -14,6 +14,10 @@
 
 > Use apenas com conteúdo próprio, em domínio público ou que você tenha autorização para salvar. Respeite os termos das plataformas e as leis aplicáveis.
 
+## Nova interface 2.6.0
+
+O logo e o nome originais BI3L foram preservados. A engrenagem fica no canto inferior esquerdo; a pasta de destino aparece apenas nas Configurações, com controles centralizados. Minimizar, maximizar/restaurar e fechar ficam no canto superior direito. A nova interface mantém filas, Drive, playlists, Spotify e conversão MP4.
+
 ## Recursos
 
 - YouTube, Instagram, TikTok, Twitch Clips, X e links públicos do Spotify
@@ -31,7 +35,7 @@
 ## Novidades da versão 2.5.0
 
 - **Google Drive público:** cole um link de arquivo ou pasta. A pasta é listada sem baixar os arquivos; marque os desejados e clique em Continuar e Baixar. Subpastas são preservadas, arquivos são salvos no formato original em `Google Drive` e arquivos existentes não são sobrescritos. Documentos Google usam o formato de exportação do gdown. Não inclui login privado nem ignora limites do Google.
-- **Outros sites:** os serviços exibidos são exemplos. URLs diretas, páginas e streams HLS/DASH compatíveis usam os extratores do yt-dlp. URLs sem resolução informada também são aceitas. Não há garantia para todos os sites, DRM ou conteúdo que exige login.
+- **Outros sites:** a tela inicial mantém o logo BI3L, o título e os controles de URL; os ícones dos serviços e suas explicações ficam fora da tela inicial. As explicações ficam neste README. URLs diretas, páginas e streams HLS/DASH compatíveis usam os extratores do yt-dlp. URLs sem resolução informada também são aceitas. Não há garantia para todos os sites, DRM ou conteúdo que exige login.
 - **Conversão mais rápida:** teste real de NVIDIA NVENC, Intel Quick Sync e AMD AMF, com fallback para CPU se necessário. CPU usa preset `veryfast`; velocidade e tamanho dependem do hardware e do vídeo. Mantém H.264 de 8 bits, taxa de quadros constante e AAC.
 - **Spotify:** metadados pelo ID correto, comparação de artista, título, duração e versão, além do álbum quando disponível. Resultados incertos abrem uma seleção antes de baixar; é possível pular a música. Vale também para playlists e álbuns. O ID identifica a faixa no Spotify, não um stream de áudio público.
 
@@ -47,7 +51,7 @@ Arquivos antigos não são alterados automaticamente: baixe novamente com esta v
 
 Abra a página de [Releases](../../releases/latest) e escolha uma opção:
 
-- **`BI3L.Media.Downloader.zip`:** pacote portátil pequeno; extraia a pasta e abra `BI3L Media Downloader.exe`. Requer Python 3.11 ou mais recente e internet na primeira execução para preparar as dependências.
+- **`BI3L.Media.Downloader.zip`:** pacote portátil pequeno; extraia a pasta e abra `BI3L Media Downloader.exe`. Requer Python 3.11 ou mais recente, WebView2 e internet na primeira execução para preparar as dependências.
 - **`BI3L.Media.Downloader.Setup.exe`:** instalador offline completo, sem precisar de Python ou internet durante a instalação. Os downloads de mídia ainda precisam de conexão.
 
 O Windows pode exibir “Editor desconhecido” enquanto o executável não possuir assinatura digital. Confira o hash SHA-256 publicado na mesma Release.
@@ -67,7 +71,7 @@ O aplicativo não baixa nem descriptografa o áudio protegido do Spotify. Ele l�
 
 ## Executar pelo código-fonte
 
-Requisitos: Windows 10/11 e Python 3.11+.
+Requisitos: Windows 10/11, Python 3.11+, WebView2 e Node.js 22.12+ para compilar a interface a partir do código-fonte.
 
 ```bat
 setup.bat

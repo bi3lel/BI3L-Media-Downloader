@@ -39,6 +39,19 @@ if errorlevel 1 (
 )
 
 echo.
+if not exist "webui\dist\index.html" (
+    where npm.cmd >nul 2>nul
+    if errorlevel 1 (
+        echo Install Node.js 22.12 or newer to build the source interface, then run setup.bat again.
+        goto :error
+    )
+    pushd webui
+    call npm.cmd ci
+    if errorlevel 1 goto :error
+    call npm.cmd run build
+    if errorlevel 1 goto :error
+    popd
+)
 echo BI3L Media Downloader is ready. Opening it now...
 start "" ".venv\Scripts\pythonw.exe" app.py
 exit /b 0

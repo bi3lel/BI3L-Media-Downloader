@@ -15,3 +15,11 @@ BI3L Media Downloader usa ou pode distribuir os componentes abaixo. As licenças
 Os nomes e logotipos YouTube, Instagram, TikTok, Twitch, X e Spotify são marcas de seus respectivos titulares. Seu uso na interface serve apenas para identificar compatibilidade e não indica afiliação ou aprovação.
 
 O mascote original e a identidade visual “BI3L Media Downloader” permanecem propriedade de BI3L e não são concedidos como marca para outro produto pela licença do código-fonte.
+
+## Redesigned desktop interface
+
+- pywebview (BSD 3-Clause): https://github.com/r0x0r/pywebview/blob/master/LICENSE
+- React / React DOM (MIT): https://github.com/facebook/react/blob/main/LICENSE
+- Vite (MIT, build tool): https://github.com/vitejs/vite/blob/main/LICENSE
+- Tailwind CSS (MIT, build tool): https://github.com/tailwindlabs/tailwindcss/blob/main/LICENSE
+- Microsoft WebView2 Runtime is a Microsoft prerequisite distributed under Microsoft's WebView2 terms: https://developer.microsoft.com/en-us/microsoft-edge/webview2/

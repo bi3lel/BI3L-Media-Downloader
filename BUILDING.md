@@ -6,6 +6,8 @@ Requisitos:
 
 - Windows 10 ou 11
 - Python 3.11 ou mais recente no PATH
+- Node.js 22.12+ para compilar webui
+- Microsoft WebView2 Runtime
 - Conexão com a internet durante a preparação
 
 Execute:
@@ -30,7 +32,7 @@ O executável compilado deve ficar ao lado da pasta `App` no pacote portátil.
 ## Instalador offline
 
 1. Instale o [Inno Setup 6](https://jrsoftware.org/isdl.php).
-2. Copie o conteúdo do projeto para a pasta `App` do Offline Builder.
+2. Execute `cd webui`, `npm ci`, `npm run build` e `npx tsc --noEmit`. Copie o conteúdo do projeto, incluindo `webui/dist`, para a pasta `App` do Offline Builder.
 3. Abra `offline_builder/Build Offline Installer.bat`.
 4. O arquivo final será criado em `Output\BI3L Media Downloader Setup.exe`.
 
@@ -40,5 +42,5 @@ Antes de publicar uma versão, execute:
 
 ```bat
 python -m unittest discover -p "test_*.py"
-python -m py_compile app.py core.py i18n.py strip_audio.py video_compat.py drive_support.py spotify_match.py
+python -m py_compile app.py core.py i18n.py strip_audio.py video_compat.py drive_support.py spotify_match.py desktop_web.py
 ```

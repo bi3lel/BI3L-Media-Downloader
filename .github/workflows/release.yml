@@ -53,11 +53,27 @@ jobs:
         if: steps.version.outputs.exists == 'false'
         run: python -m pip install --disable-pip-version-check -r requirements.txt
 
+      - name: Set up Node.js
+        if: steps.version.outputs.exists == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: webui/package-lock.json
+
+      - name: Build and check interface
+        if: steps.version.outputs.exists == 'false'
+        working-directory: webui
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npm run build
+
       - name: Run tests
         if: steps.version.outputs.exists == 'false'
         run: |
           python -m unittest discover -p "test_*.py"
-          python -m py_compile app.py core.py i18n.py strip_audio.py video_compat.py drive_support.py spotify_match.py
+          python -m py_compile app.py core.py i18n.py strip_audio.py video_compat.py drive_support.py spotify_match.py desktop_web.py
 
       - name: Compile portable launcher
         if: steps.version.outputs.exists == 'false'
@@ -86,8 +102,10 @@ jobs:
         shell: pwsh
         run: |
           $app = "release-stage\BI3L Media Downloader\App"
-          Copy-Item app.py, core.py, i18n.py, strip_audio.py, video_compat.py, drive_support.py, spotify_match.py, requirements.txt, setup.bat, run.bat, README.md -Destination $app
+          Copy-Item app.py, core.py, i18n.py, strip_audio.py, video_compat.py, drive_support.py, spotify_match.py, desktop_web.py, requirements.txt, setup.bat, run.bat, README.md, LICENSE, THIRD_PARTY_NOTICES.md -Destination $app
           Copy-Item assets -Destination $app -Recurse
+          New-Item -ItemType Directory -Force -Path "$app\webui" | Out-Null
+          Copy-Item webui\dist -Destination "$app\webui" -Recurse
           New-Item -ItemType Directory -Force -Path release-output | Out-Null
           Compress-Archive -Path "release-stage\BI3L Media Downloader" -DestinationPath "release-output\BI3L.Media.Downloader.zip" -CompressionLevel Optimal
 
@@ -97,8 +115,10 @@ jobs:
         run: |
           $app = "offline_builder\App"
           New-Item -ItemType Directory -Force -Path $app | Out-Null
-          Copy-Item app.py, core.py, i18n.py, strip_audio.py, video_compat.py, drive_support.py, spotify_match.py, requirements.txt, setup.bat, run.bat, README.md -Destination $app
+          Copy-Item app.py, core.py, i18n.py, strip_audio.py, video_compat.py, drive_support.py, spotify_match.py, desktop_web.py, requirements.txt, setup.bat, run.bat, README.md, LICENSE, THIRD_PARTY_NOTICES.md -Destination $app
           Copy-Item assets -Destination $app -Recurse
+          New-Item -ItemType Directory -Force -Path "$app\webui" | Out-Null
+          Copy-Item webui\dist -Destination "$app\webui" -Recurse
 
       - name: Install Inno Setup
         if: steps.version.outputs.exists == 'false'
