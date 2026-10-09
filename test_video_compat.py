@@ -10,6 +10,11 @@ from video_compat import make_editor_mp4
 
 
 class ConversionSafetyTests(unittest.TestCase):
+    def setUp(self):
+        patcher = patch("video_compat.available_encoder", return_value="libx264")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_failures_preserve_original_and_remove_partial_output(self):
         for failure in (OSError("Cannot start FFmpeg"), subprocess.CompletedProcess([], 1, stderr="Encoder failed")):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:

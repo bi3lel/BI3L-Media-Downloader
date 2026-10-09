@@ -13,6 +13,7 @@ Os arquivos baixados vão para a pasta escolhida pelo usuário. Arquivos tempor�
 Para analisar e baixar mídia, o aplicativo e o yt-dlp conectam-se ao endereço informado e aos servidores necessários para obter o conteúdo público.
 
 - **TikTok:** o aplicativo tenta o yt-dlp local primeiro. Somente quando o extrator retorna a falha conhecida de página/desafio, a URL pública da publicação pode ser enviada a `tikwm.com` para obter um link temporário de mídia.
+- **Google Drive:** o gdown consulta metadados públicos para listar arquivos. O conteúdo só é baixado após a seleção e confirmação de download. Não utiliza login Google nem cookies salvos do navegador.
 - **Spotify:** o aplicativo consulta metadados públicos do Spotify e procura uma fonte pública correspondente. Ele não acessa, baixa nem descriptografa os streams protegidos do Spotify.
 - **Atualizações:** a opção de atualizar o downloader consulta e baixa uma versão atual do yt-dlp.
 

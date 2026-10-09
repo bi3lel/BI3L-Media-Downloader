@@ -4,6 +4,7 @@ BI3L Media Downloader usa ou pode distribuir os componentes abaixo. As licenças
 
 | Componente | Finalidade | Licença / informações |
 |---|---|---|
+| gdown | Listagem e download de arquivos públicos do Google Drive | [MIT](https://github.com/wkentaro/gdown/blob/main/LICENSE) |
 | yt-dlp | Extração e download de mídia | [Projeto e licença](https://github.com/yt-dlp/yt-dlp). O executável standalone para Windows pode incluir componentes GPLv3+, conforme a documentação de licenciamento do projeto. |
 | FFmpeg | Mesclagem, conversão e pós-processamento | [Informações legais do FFmpeg](https://ffmpeg.org/legal.html). A licença efetiva depende da configuração do binário distribuído. |
 | CustomTkinter | Interface gráfica | [MIT](https://github.com/TomSchimansky/CustomTkinter/blob/master/LICENSE) |

@@ -2,3 +2,4 @@ imageio-ffmpeg>=0.6.0
 certifi>=2025.8.3
 customtkinter>=5.2.2
 Pillow>=10.4.0
+gdown==6.4.2

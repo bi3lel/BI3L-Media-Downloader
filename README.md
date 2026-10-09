@@ -28,11 +28,18 @@
 - Atualização do mecanismo yt-dlp pelas Configurações
 - Pasta de downloads configurável
 
+## Novidades da versão 2.5.0
+
+- **Google Drive público:** cole um link de arquivo ou pasta. A pasta é listada sem baixar os arquivos; marque os desejados e clique em Continuar e Baixar. Subpastas são preservadas, arquivos são salvos no formato original em `Google Drive` e arquivos existentes não são sobrescritos. Documentos Google usam o formato de exportação do gdown. Não inclui login privado nem ignora limites do Google.
+- **Outros sites:** os serviços exibidos são exemplos. URLs diretas, páginas e streams HLS/DASH compatíveis usam os extratores do yt-dlp. URLs sem resolução informada também são aceitas. Não há garantia para todos os sites, DRM ou conteúdo que exige login.
+- **Conversão mais rápida:** teste real de NVIDIA NVENC, Intel Quick Sync e AMD AMF, com fallback para CPU se necessário. CPU usa preset `veryfast`; velocidade e tamanho dependem do hardware e do vídeo. Mantém H.264 de 8 bits, taxa de quadros constante e AAC.
+- **Spotify:** metadados pelo ID correto, comparação de artista, título, duração e versão, além do álbum quando disponível. Resultados incertos abrem uma seleção antes de baixar; é possível pular a música. Vale também para playlists e álbuns. O ID identifica a faixa no Spotify, não um stream de áudio público.
+
 ## MP4 para VEGAS e outros editores
 
-A versão 2.4.1 converte todos os downloads MP4 para vídeo H.264 High, 8 bits, 4:2:0 e taxa de quadros constante, com áudio AAC-LC estéreo a 48 kHz. A opção sem áudio usa a mesma conversão de vídeo. Também funciona com links diretos e playlists.
+O aplicativo converte todos os downloads MP4 para vídeo H.264 High, 8 bits, 4:2:0 e taxa de quadros constante, com áudio AAC-LC estéreo a 48 kHz. A opção sem áudio usa a mesma conversão de vídeo. Também funciona com links diretos e playlists.
 
-Antes, um arquivo `.mp4` podia conter AV1, VP9 ou Opus, incompatíveis com alguns editores. A conversão agora ocorre mesmo quando o arquivo já é MP4. Ela demora mais, precisa de espaço para uma segunda cópia e pode aumentar o tamanho do arquivo. A codificação usa CRF 18, com perda de qualidade pequena. Aguarde a etapa de conversão terminar; em caso de falha, o download original é preservado e um erro é exibido.
+Antes, um arquivo `.mp4` podia conter AV1, VP9 ou Opus, incompatíveis com alguns editores. A conversão agora ocorre mesmo quando o arquivo já é MP4. Ela demora mais, precisa de espaço para uma segunda cópia e pode aumentar o tamanho do arquivo. A codificação usa CRF 18 na CPU ou ajustes de qualidade específicos na GPU; há perda de qualidade. Aguarde a etapa de conversão terminar; em caso de falha, o download original é preservado e um erro é exibido.
 
 Arquivos antigos não são alterados automaticamente: baixe novamente com esta versão ou faça uma cópia de segurança e execute `python video_compat.py "caminho/para/video.mp4"` na instalação pelo código-fonte. Use `--silent` para remover o áudio. Editores antigos ainda podem limitar resolução e taxa de quadros. Não inclui mapeamento de tons HDR para SDR.
 

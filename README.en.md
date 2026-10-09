@@ -26,17 +26,27 @@ Open [Releases](../../releases/latest):
 
 The default download directory is `%USERPROFILE%\Downloads\BI3L Media Downloader` and can be changed in Settings.
 
+## Google Drive and other websites
+
+Paste a public Google Drive file or folder link. Folders are listed without downloading their files; check only the files you want, then Continue and Download. Subfolders keep their relative structure. Drive files are saved in their original format under `Google Drive`, with their IDs in the filenames; existing files are not overwritten. Google documents use the export format provided by gdown. Private/sign-in-only links and Google quota restrictions are not bypassed.
+
+The home-screen services are examples, not a whitelist. Other public pages, direct media URLs, and supported HLS/DASH streams are handled by yt-dlp's site extractors and generic extractor. Unknown resolution metadata no longer rejects direct links. Compatibility depends on the website; DRM, login-only content, and sites with no discoverable media are not universally supported.
+
+## Faster MP4 conversion
+
+The app tests NVIDIA NVENC, Intel Quick Sync, and AMD AMF with a small real encode. It uses the first working H.264 encoder and retries on CPU if a full video fails on hardware. The CPU fallback uses the faster `veryfast` preset. Output remains 8-bit H.264 with constant frame rate and AAC stereo audio. Speed and output size depend on hardware and content; GPU quality settings are not identical to x264 CRF. Converting a file still takes time and disk space.
+
 ## MP4 compatibility with VEGAS and other editors
 
 MP4 downloads are now converted automatically to H.264 High profile, 8-bit 4:2:0 video with constant frame rate and AAC-LC stereo audio at 48 kHz. Silent downloads use the same video conversion without an audio track. This also applies to direct links and playlists.
 
-An MP4 extension alone does not guarantee compatible codecs: older downloads could contain AV1, VP9 or Opus. Version 2.4.1 converts the streams even when the source is already MP4. Conversion takes extra time, needs space for a second copy, and may increase file size; it uses high-quality lossy encoding (CRF 18). Wait for the conversion stage to finish. If it fails, the original download is kept and an error is shown.
+An MP4 extension alone does not guarantee compatible codecs: older downloads could contain AV1, VP9 or Opus. The app converts the streams even when the source is already MP4. Conversion takes extra time, needs space for a second copy, and may increase file size; it uses high-quality lossy encoding (CPU: CRF 18; GPU: encoder-specific quality settings). Wait for the conversion stage to finish. If it fails, the original download is kept and an error is shown.
 
 Previously downloaded files are not changed automatically. Download them again with this version, or back up an existing MP4 and run `python video_compat.py "path/to/video.mp4"` from the source installation. Add `--silent` to remove audio. Very old editors may still have resolution/frame-rate limits; choose a lower download quality if needed. HDR-to-SDR tone mapping is not included.
 
 ## Spotify note
 
-The application does not download or decrypt protected Spotify audio. It reads public link metadata and searches for a matching public source supported by yt-dlp.
+The application does not download or decrypt protected Spotify audio. It resolves public metadata for the exact Spotify track ID and compares multiple public candidates by title, artist, duration and version, plus album data when available. Automatic selection also requires an artist channel match. Missing metadata, ambiguous results or a near tie open a selection dialog; nothing downloads until you choose, and you can skip the song. This applies to tracks and selected playlist/album items. A Spotify ID identifies metadata, not a downloadable Spotify audio stream; public matches cannot be guaranteed identical.
 
 ## Source
 

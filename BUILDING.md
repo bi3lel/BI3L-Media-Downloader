@@ -39,6 +39,6 @@ O builder baixa as ferramentas atuais uma vez e cria um instalador autossuficien
 Antes de publicar uma versão, execute:
 
 ```bat
-python -m unittest test_core.py test_playlist_stream.py test_video_compat.py
-python -m py_compile app.py core.py i18n.py strip_audio.py video_compat.py
+python -m unittest discover -p "test_*.py"
+python -m py_compile app.py core.py i18n.py strip_audio.py video_compat.py drive_support.py spotify_match.py
 ```

@@ -23,6 +23,8 @@ from PIL import Image
 from i18n import LANGUAGE_NAMES, localize_known_error, translate
 from strip_audio import strip_audio
 from video_compat import make_editor_mp4
+from drive_support import list_public_drive
+from spotify_match import rank_candidates, automatic_candidate
 
 from core import (
     APP_DISPLAY_NAME,
@@ -278,15 +280,15 @@ class MediaDownloader(ctk.CTk):
 
         chips = ctk.CTkFrame(card, fg_color="transparent")
         chips.grid(row=5, column=0, pady=(4, 0))
-        for index, label in enumerate(("YouTube", "Instagram", "TikTok", "Twitch", "X", "Spotify")):
-            row, column = divmod(index, 3)
+        for index, label in enumerate(("YouTube", "Instagram", "TikTok", "Twitch", "X", "Spotify", "Google Drive", self._t("platform.website"))):
+            row, column = divmod(index, 4)
             icon = self._platform_icon(label)
             ctk.CTkLabel(
                 chips,
                 text=f"  {label}" if icon else label,
                 image=icon,
                 compound="left",
-                width=150,
+                width=125,
                 height=34,
                 padx=9,
                 corner_radius=17,
@@ -295,14 +297,15 @@ class MediaDownloader(ctk.CTk):
                 font=ctk.CTkFont(FONT, 11),
             ).grid(row=row, column=column, padx=4, pady=4)
 
-        self.after(150, self.url_entry.focus_set)
+        entry = self.url_entry
+        self.after(150, lambda: entry.focus_set() if entry.winfo_exists() else None)
 
     def _analyze(self) -> None:
         urls = split_urls(self.url_entry.get())
         if not urls:
             self.home_status.configure(text=self._t("home.invalid_url"), text_color=ERROR)
             return
-        if not self._yt_dlp_candidate_paths():
+        if any(platform_from_url(url) != "Google Drive" for url in urls) and not self._yt_dlp_candidate_paths():
             messagebox.showerror(
                 APP_DISPLAY_NAME,
                 self._t("home.engine_missing"),
@@ -532,6 +535,8 @@ class MediaDownloader(ctk.CTk):
 
     def _analyze_one(self, url: str) -> dict[str, Any]:
         platform = platform_from_url(url)
+        if platform == "Google Drive":
+            return list_public_drive(url)
         target = url
         spotify_meta: dict[str, str] = {}
         if is_spotify_url(url):
@@ -566,7 +571,10 @@ class MediaDownloader(ctk.CTk):
                     ],
                 }
             spotify_meta = resolve_spotify_track_info(url)
-            target = spotify_meta["query"]
+            return {"title": spotify_meta["display"], "duration": spotify_meta.get("duration"),
+                    "platform": "Spotify", "target": url, "original_url": url,
+                    "thumbnail": self._download_thumbnail(str(spotify_meta.get("cover") or "")),
+                    "is_playlist": False, "spotify_metadata": spotify_meta}
 
         command = [
             self._find_yt_dlp() or "yt-dlp",
@@ -893,7 +901,7 @@ class MediaDownloader(ctk.CTk):
         self.playlist_info = info
         self.playlist_return_to_queue = return_to_queue
         entries = list(info.get("playlist_entries") or [])
-        selected = set(info.get("selected_indices") or [entry.get("index") for entry in entries])
+        selected = set(info.get("selected_indices", [entry.get("index") for entry in entries]))
         self.playlist_variables = {}
         self.playlist_streaming = bool(info.get("streaming"))
         self.playlist_select_future = bool(entries) and len(selected) == len(entries)
@@ -1208,6 +1216,7 @@ class MediaDownloader(ctk.CTk):
         ctk.CTkButton(
             card,
             text=self._t("queue.continue"),
+            state="disabled" if any(item.get("drive_files") and not item.get("selected_indices") for item in items) else "normal",
             height=50,
             corner_radius=BUTTON_RADIUS,
             fg_color=ACCENT,
@@ -1432,6 +1441,12 @@ class MediaDownloader(ctk.CTk):
         if self.current_platform == "Spotify" or info.get("audio_only"):
             self.mp4_button.configure(state="disabled")
         self._refresh_selection_styles()
+        queue_items = info.get("queue_items") or []
+        if info.get("drive_files") or any(item.get("drive_files") for item in queue_items):
+            if info.get("drive_files") or all(item.get("drive_files") for item in queue_items):
+                options.grid_remove()
+            self.status_label.configure(text=self._t("drive.original"))
+            self.status_label.grid()
 
     def _go_back(self) -> None:
         if self.worker and self.worker.is_alive():
@@ -1650,6 +1665,8 @@ class MediaDownloader(ctk.CTk):
         queue_index: int | None = None,
         queue_count: int | None = None,
     ) -> str | None:
+        if info.get("drive_files"):
+            return self._download_drive_files(info, settings)
         spotify_tracks = list(info.get("spotify_tracks") or [])
         if spotify_tracks:
             selected = set(info.get("selected_indices") or [])
@@ -1870,6 +1887,139 @@ class MediaDownloader(ctk.CTk):
         safe = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", value).strip(" ._")
         return (safe or fallback)[:140]
 
+    def _download_drive_files(self, info: dict[str, Any], settings: DownloadSettings) -> str:
+        from drive_support import safe_relative_path
+
+        selected = set(info.get("selected_indices", []))
+        files = [entry for entry in info["drive_files"] if entry["index"] in selected]
+        if not files:
+            raise RuntimeError(self._t("drive.select_files"))
+        root = Path(settings.output_dir).expanduser().resolve() / "Google Drive"
+        failures = 0
+        for index, entry in enumerate(files, 1):
+            if self.cancel_event.is_set():
+                raise InterruptedError()
+            self.events.put(("item_started", f"{index}/{len(files)} · {entry['title']}"))
+            target = root / safe_relative_path(entry["title"], entry["media_id"])
+            target.parent.mkdir(parents=True, exist_ok=True)
+            # Never overwrite an existing user file, including a previous download.
+            candidate = target
+            number = 2
+            while candidate.exists():
+                candidate = target.with_name(f"{target.stem} ({number}){target.suffix}")
+                number += 1
+            with tempfile.TemporaryDirectory(prefix="drive-", dir=getattr(self, "active_temp_dir", "") or None) as directory:
+                partial = Path(directory) / "download"
+                helper = ([sys.executable, "--drive-download"] if getattr(sys, "frozen", False)
+                          else [sys.executable, str(Path(__file__).with_name("drive_support.py"))])
+                try:
+                    self._run_yt_dlp_once([*helper, entry["target"], str(partial)])
+                    if self.cancel_event.is_set():
+                        raise InterruptedError()
+                    shutil.move(str(partial), str(candidate))
+                except RuntimeError:
+                    failures += 1
+                    if len(files) == 1:
+                        raise
+        if failures == len(files):
+            raise RuntimeError(self._t("download.none_saved"))
+        return self._t("download.queue_partial" if failures else "download.queue_complete",
+                       saved=len(files) - failures, total=len(files))
+
+    def _spotify_source(self, metadata: dict[str, Any]) -> str:
+        """Select an explicit video once; never hand ytsearch1 to the downloader."""
+        self.events.put(("status", self._t("spotify.matching", title=metadata["title"])))
+        terms = " ".join(str(metadata.get(key) or "") for key in ("title", "artists"))
+        command = [self._find_yt_dlp() or "yt-dlp", "--ignore-config", "-J", "--flat-playlist",
+                   "--skip-download", "--no-warnings", *self._js_runtime_arguments(), "--", f"ytsearch8:{terms} official audio"]
+        self.current_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                                text=True, encoding="utf-8", errors="replace",
+                                                creationflags=self._creation_flags())
+        deadline = time.monotonic() + 150
+        try:
+            while True:
+                if self.cancel_event.is_set():
+                    self._terminate_current_process()
+                    raise InterruptedError()
+                if time.monotonic() > deadline:
+                    self._terminate_current_process()
+                    raise RuntimeError(self._t("spotify.search_failed"))
+                try:
+                    stdout, stderr = self.current_process.communicate(timeout=0.25)
+                    break
+                except subprocess.TimeoutExpired:
+                    continue
+            if self.current_process.returncode:
+                raise RuntimeError(self._last_error(stderr or stdout))
+        finally:
+            if self.current_process is not None:
+                if self.current_process.poll() is None:
+                    self._terminate_current_process()
+                self.current_process.communicate()
+            self.current_process = None
+        candidates = rank_candidates(metadata, json.loads(stdout).get("entries") or [])
+        if not candidates:
+            raise RuntimeError(self._t("spotify.no_matches"))
+        match = automatic_candidate(candidates)
+        if match:
+            return match["target"]
+        answer: queue.Queue = queue.Queue(maxsize=1)
+        self.events.put(("spotify_choose", {"track": metadata, "candidates": candidates, "answer": answer}))
+        while not self.cancel_event.is_set():
+            try:
+                chosen = answer.get(timeout=0.2)
+                if chosen is None:
+                    raise RuntimeError(self._t("spotify.skipped"))
+                return candidates[chosen]["target"]
+            except queue.Empty:
+                continue
+        raise InterruptedError()
+
+    def _show_spotify_candidates(self, payload: dict[str, Any]) -> None:
+        if self.cancel_event.is_set():
+            return
+        dialog = ctk.CTkToplevel(self, fg_color=BG)
+        dialog.title(self._t("spotify.choose"))
+        dialog.geometry("740x570")
+        dialog.transient(self)
+        dialog.grab_set()
+        track = payload["track"]
+        duration = self._format_duration(track.get("duration"))
+        label = f"{track['title']} — {track.get('artists') or '?'} · {duration}"
+        ctk.CTkLabel(dialog, text=self._t("spotify.choose_hint") + "\n" + label,
+                     wraplength=690, justify="left", text_color=TEXT).pack(padx=20, pady=15)
+        listing = ctk.CTkScrollableFrame(dialog, fg_color=SURFACE)
+        listing.pack(fill="both", expand=True, padx=20)
+        selected = tk.IntVar(value=-1)
+        for index, item in enumerate(payload["candidates"]):
+            detail = f"{item.get('title', '')}\n{item.get('channel') or item.get('uploader') or '?'} · {self._format_duration(item.get('duration'))}"
+            row = ctk.CTkFrame(listing, fg_color="transparent")
+            row.pack(fill="x", pady=7)
+            ctk.CTkRadioButton(row, text="", width=24, variable=selected, value=index).pack(side="left", padx=8)
+            ctk.CTkLabel(row, text=detail, wraplength=580, justify="left", anchor="w").pack(side="left", fill="x", expand=True)
+
+        def finish(value):
+            if value == -1:
+                return
+            payload["answer"].put_nowait(value)
+            dialog.grab_release()
+            dialog.destroy()
+
+        actions = ctk.CTkFrame(dialog, fg_color="transparent")
+        actions.pack(fill="x", padx=20, pady=15)
+        ctk.CTkButton(actions, text=self._t("spotify.skip"), command=lambda: finish(None)).pack(side="left")
+        ctk.CTkButton(actions, text=self._t("spotify.use"), command=lambda: finish(selected.get())).pack(side="right")
+        dialog.protocol("WM_DELETE_WINDOW", lambda: finish(None))
+
+        def check_cancel():
+            if not dialog.winfo_exists():
+                return
+            if self.cancel_event.is_set():
+                finish(None)
+            else:
+                dialog.after(200, check_cancel)
+        dialog.after(200, check_cancel)
+
     def _download_spotify_collection(
         self,
         tracks: list[dict[str, Any]],
@@ -1900,13 +2050,9 @@ class MediaDownloader(ctk.CTk):
                     f"{item_number}/{total} · {display} · {self._t('download.downloading_audio')}",
                 )
             )
-            command = self._download_command(
-                str(track["query"]),
-                "MP3",
-                settings,
-                output_template=template,
-            )
             try:
+                source = self._spotify_source(track)
+                command = self._download_command(source, "MP3", settings, output_template=template)
                 self._run_yt_dlp(
                     command,
                     context_title=display,
@@ -1968,7 +2114,7 @@ class MediaDownloader(ctk.CTk):
         template = f"Spotify/{safe_title}{artist_suffix}.%(ext)s"
         self.events.put(("status", f"{title} · {self._t('download.downloading_audio')}"))
         command = self._download_command(
-            str(info.get("target") or metadata.get("query") or ""),
+            self._spotify_source(metadata),
             "MP3",
             settings,
             output_template=template,
@@ -2106,6 +2252,7 @@ class MediaDownloader(ctk.CTk):
 
         command = [
             executable,
+            "--ignore-config",
             "--newline",
             "--progress",
             "--progress-template",
@@ -2151,7 +2298,7 @@ class MediaDownloader(ctk.CTk):
                 if not direct_media:
                     height = re.search(r"(\d+)", settings.video_quality)
                     selector = (
-                        f"bv*[height<={height.group(1)}]"
+                        f"bv*[height<=?{height.group(1)}]"
                         if height
                         else "bv*"
                     )
@@ -2161,7 +2308,7 @@ class MediaDownloader(ctk.CTk):
                 if height:
                     limit = height.group(1)
                     command.extend(
-                        ["-f", f"bv*[height<={limit}]+ba/b[height<={limit}]"]
+                        ["-f", f"bv*[height<=?{limit}]+ba/b[height<=?{limit}]"]
                     )
         cached_info_path = self._write_cached_info_json(info_json or {})
         if cached_info_path is not None:
@@ -2533,7 +2680,9 @@ class MediaDownloader(ctk.CTk):
             while processed < 25:
                 kind, payload = self.events.get_nowait()
                 processed += 1
-                if kind == "analysis_batch_done":
+                if kind == "spotify_choose":
+                    self._show_spotify_candidates(payload)
+                elif kind == "analysis_batch_done":
                     self.worker = None
                     results = list(payload or [])
                     if len(results) == 1:
@@ -2641,6 +2790,9 @@ class MediaDownloader(ctk.CTk):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) >= 2 and sys.argv[1] == "--drive-download":
+        from drive_support import main as drive_main
+        raise SystemExit(drive_main(sys.argv[2:]))
     if len(sys.argv) >= 2 and sys.argv[1] == "--editor-mp4":
         import argparse
 

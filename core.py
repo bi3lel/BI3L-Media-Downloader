@@ -15,7 +15,7 @@ from typing import Any
 APP_NAME = "BI3L Media Downloader"
 APP_DISPLAY_NAME = APP_NAME
 LEGACY_APP_NAMES = ("Downloader", "MediaDock")
-APP_VERSION = "2.4.1"
+APP_VERSION = "2.5.0"
 
 
 @dataclass
@@ -91,6 +91,8 @@ def split_urls(raw: str) -> list[str]:
 
 def platform_from_url(url: str) -> str:
     host = urllib.parse.urlparse(url).netloc.lower().removeprefix("www.")
+    if host in {"drive.google.com", "docs.google.com"}:
+        return "Google Drive"
     if host in {"youtu.be", "youtube.com", "music.youtube.com", "m.youtube.com"} or host.endswith(".youtube.com"):
         return "YouTube"
     if host == "instagram.com" or host.endswith(".instagram.com"):
@@ -222,7 +224,8 @@ def resolve_spotify_collection(url: str, timeout: int = 30) -> dict[str, Any]:
                 "position": position,
                 "title": title,
                 "artists": artists,
-                "query": f"ytsearch1:{search_terms}",
+                "query": f"ytsearch8:{search_terms}",
+                "duration": float(item.get("duration") or 0) / 1000,
                 "album": collection_title,
                 "cover": cover_url,
             }
@@ -238,7 +241,7 @@ def resolve_spotify_collection(url: str, timeout: int = 30) -> dict[str, Any]:
     }
 
 
-def resolve_spotify_track_info(url: str, timeout: int = 15) -> dict[str, str]:
+def resolve_spotify_track_info(url: str, timeout: int = 15) -> dict[str, Any]:
     """Resolve public Spotify track metadata for a matching yt-dlp search.
 
     No Spotify audio stream is accessed. The returned query is intended to match
@@ -250,6 +253,12 @@ def resolve_spotify_track_info(url: str, timeout: int = 15) -> dict[str, str]:
             "Paste a Spotify track, public playlist, or public album link."
         )
 
+    track_id = _spotify_content_id(url, "track")
+    try:
+        return _spotify_embed_track(track_id, timeout)
+    except (OSError, ValueError, KeyError, TypeError):
+        # oEmbed can omit artists/duration. Such tracks MUST require selection.
+        pass
     endpoint = "https://open.spotify.com/oembed?" + urllib.parse.urlencode({"url": url})
     request = urllib.request.Request(
         endpoint,
@@ -267,11 +276,13 @@ def resolve_spotify_track_info(url: str, timeout: int = 15) -> dict[str, str]:
 
     title = str(payload.get("title", "")).strip()
     author = str(payload.get("author_name", "")).strip()
+    if author.casefold() == "spotify":
+        author = ""
     if not title:
         raise ValueError("Spotify did not return enough track metadata.")
 
     display = f"{title} — {author}" if author else title
-    query = f"ytsearch1:{title} {author} official audio".strip()
+    query = f"ytsearch8:{title} {author} official audio".strip()
     return {
         "query": query,
         "display": display,
@@ -279,7 +290,58 @@ def resolve_spotify_track_info(url: str, timeout: int = 15) -> dict[str, str]:
         "artists": author,
         "album": title,
         "cover": str(payload.get("thumbnail_url") or ""),
+        "id": track_id,
+        "duration": None,
     }
+
+
+def _spotify_embed_track(track_id: str, timeout: int) -> dict[str, Any]:
+    request = urllib.request.Request(f"https://open.spotify.com/embed/track/{track_id}",
+                                     headers={"User-Agent": "Mozilla/5.0"})
+    try:
+        import certifi
+        context = ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        context = ssl.create_default_context()
+    with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+        page = response.read(15_000_000).decode("utf-8")
+    match = re.search(r'<script[^>]*\bid=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>', page, re.S)
+    if not match:
+        raise ValueError("Spotify track metadata unavailable")
+    payload = json.loads(match.group(1))
+
+    def find(value):
+        if isinstance(value, dict):
+            if value.get("uri") == f"spotify:track:{track_id}" and (value.get("artists") or value.get("subtitle")):
+                return value
+            for child in value.values():
+                found = find(child)
+                if found:
+                    return found
+        elif isinstance(value, list):
+            for child in value:
+                found = find(child)
+                if found:
+                    return found
+        return None
+
+    entity = find(payload)
+    if not entity:
+        raise ValueError("Spotify did not return metadata for the requested track ID")
+    title = str(entity.get("title") or entity.get("name") or "").strip()
+    artist_values = entity.get("artists") or []
+    artists = ", ".join(a["name"] for a in artist_values if isinstance(a, dict) and a.get("name"))
+    artists = artists or str(entity.get("subtitle") or "")
+    if not title:
+        raise ValueError("Spotify did not return a track title")
+    sources = (entity.get("coverArt") or {}).get("sources") or []
+    album = entity.get("album") or {}
+    return {"id": track_id, "title": title, "artists": artists,
+            "duration": float(entity.get("duration") or 0) / 1000 or None,
+            "album": str(album.get("name") or "") if isinstance(album, dict) else str(album),
+            "cover": str(sources[-1].get("url") or "") if sources else "",
+            "display": f"{title} — {artists}" if artists else title,
+            "query": f"ytsearch8:{title} {artists} official audio"}
 
 
 def resolve_spotify_track(url: str, timeout: int = 15) -> tuple[str, str]:

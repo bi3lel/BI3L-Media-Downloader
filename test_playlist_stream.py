@@ -118,7 +118,7 @@ class PlaylistStreamTests(unittest.TestCase):
             DownloadSettings(video_quality="1080p", video_no_audio=True),
         )
 
-        self.assertEqual(command[command.index("-f") + 1], "bv*[height<=1080]")
+        self.assertEqual(command[command.index("-f") + 1], "bv*[height<=?1080]")
         self.assertIn("--remux-video", command)
         exec_value = command[command.index("--exec") + 1]
         self.assertIn("video_compat.py", exec_value)

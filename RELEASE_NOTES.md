@@ -1,34 +1,23 @@
-# BI3L Media Downloader v2.4.1
+# BI3L Media Downloader v2.5.0
 
-## Correção de compatibilidade MP4 / VEGAS
+## English
 
-- Conversão automática para H.264 High de 8 bits (4:2:0), taxa de quadros constante e áudio AAC-LC estéreo a 48 kHz.
-- Corrige downloads MP4 que continham VP9, AV1, Opus ou vídeo de 10 bits e não abriam em alguns editores.
-- Inclui MP4 sem áudio, playlists e links diretos; MP3 permanece inalterado.
-- Preserva o download original se a conversão falhar e mostra o erro.
-- A conversão requer tempo e espaço adicionais. Baixe novamente os vídeos antigos para aplicar a correção.
+- Browse public Google Drive folders before downloading. Select individual files; preserve original formats and nested paths, without overwriting existing files.
+- Public media pages and direct URLs work beyond the home-screen examples. Accept streams whose resolution metadata is missing.
+- Detect working NVIDIA, Intel and AMD H.264 encoders with a real probe. Fall back to faster CPU conversion if unavailable or if a video fails on GPU.
+- Fix same-title Spotify mismatches: resolve track metadata by ID, compare artist/title/duration/version and prompt for uncertain candidates instead of blindly downloading the first result. Applies to tracks, playlists and albums.
+- Keep editor-compatible H.264/AAC output. No Google sign-in or protected Spotify audio downloads.
 
-## MP4 / VEGAS compatibility fix
+## Português (Brasil)
 
-All MP4 downloads now convert to 8-bit H.264 video with constant frame rate and AAC stereo audio. This fixes the previous container-only merge that could leave unsupported codecs inside an MP4. Silent videos, direct links and playlists are covered. Conversion takes extra time and disk space; old downloads must be downloaded again or converted with the source helper. The original is preserved if conversion fails.
-
-## Destaques
-
-- Interface em English e Português (Brasil)
-- Carregamento progressivo de playlists grandes
-- Fila de vários links e seleção de itens
-- Progresso detalhado reiniciado para cada mídia
-- MP4 com áudio, MP4 sem áudio e MP3
-- Suporte a Twitch Clips e coleções públicas compatíveis
-- Atualização do yt-dlp dentro das Configurações
-- Seleção automática do mecanismo yt-dlp mais recente disponível
-- Downloads fragmentados, retentativas e limpeza segura ao cancelar
-- Identidade visual BI3L Media Downloader
+- Liste pastas públicas do Google Drive e selecione arquivos antes de baixar. Mantém formato original e subpastas, sem sobrescrever arquivos existentes.
+- Suporte a páginas e URLs públicas de mídia além dos exemplos da tela inicial, inclusive sem resolução informada.
+- Detecta encoders H.264 NVIDIA, Intel e AMD com teste real; fallback automático para CPU mais rápida.
+- Spotify: confere ID, artista, título, duração e versão. Correspondências incertas exigem seleção, também em playlists e álbuns.
+- Mantém H.264/AAC compatível com editores. Sem login Google ou download de áudio protegido do Spotify.
 
 ## Downloads
 
-- `BI3L.Media.Downloader.zip`: pacote portátil pequeno com launcher do Windows.
-- `BI3L.Media.Downloader.Setup.exe`: instalador offline completo.
-- `SHA256SUMS.txt`: hashes para verificar os arquivos publicados.
-
-Leia o README, os avisos de privacidade e os componentes de terceiros antes de redistribuir.
+- `BI3L.Media.Downloader.zip`: portable launcher (Python and first-run internet required).
+- `BI3L.Media.Downloader.Setup.exe`: self-contained Windows installer.
+- `SHA256SUMS.txt`: published download checksums.

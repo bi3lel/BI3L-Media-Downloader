@@ -40,7 +40,7 @@ if not exist "_build\venv\Scripts\python.exe" (
 echo [2/5] Installing the Windows build tools and runtime packages...
 "_build\venv\Scripts\python.exe" -m pip install --disable-pip-version-check --upgrade pip
 if errorlevel 1 goto :error
-"_build\venv\Scripts\python.exe" -m pip install --disable-pip-version-check "pyinstaller>=6.11,<7" "customtkinter>=5.2.2,<6" "Pillow>=10.4,<13" "imageio-ffmpeg>=0.6,<1" "certifi>=2025.8.3"
+"_build\venv\Scripts\python.exe" -m pip install --disable-pip-version-check "pyinstaller>=6.11,<7" "customtkinter>=5.2.2,<6" "Pillow>=10.4,<13" "imageio-ffmpeg>=0.6,<1" "certifi>=2025.8.3" "gdown==6.4.2"
 if errorlevel 1 goto :error
 
 if not exist "_build\tools" mkdir "_build\tools"
@@ -63,6 +63,7 @@ echo [4/5] Building the self-contained Windows application...
     --version-file "%ROOT%\Builder Files\version_info.txt" ^
     --paths "%ROOT%\App" ^
     --hidden-import "strip_audio" ^
+    --copy-metadata "gdown" ^
     --collect-data "customtkinter" ^
     --collect-binaries "imageio_ffmpeg" ^
     --add-data "%ROOT%\App\assets;assets" ^
