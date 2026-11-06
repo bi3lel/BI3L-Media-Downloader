@@ -15,7 +15,7 @@ from typing import Any
 APP_NAME = "BI3L Media Downloader"
 APP_DISPLAY_NAME = APP_NAME
 LEGACY_APP_NAMES = ("Downloader", "MediaDock")
-APP_VERSION = "2.6.0"
+APP_VERSION = "2.7.0"
 
 
 @dataclass
@@ -26,6 +26,7 @@ class DownloadSettings:
     audio_quality: str = "320 kbps"
     also_audio: bool = False
     video_no_audio: bool = False
+    editor_compatibility: bool = False
     language: str = "en"
     filename_template: str = "%(title)s [%(id)s].%(ext)s"
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import ClipRange, { type Clip } from "./ClipRange"
 
 type Settings = {
   output_dir: string
@@ -7,6 +8,7 @@ type Settings = {
   audio_quality: string
   also_audio: boolean
   video_no_audio: boolean
+  editor_compatibility: boolean
   language: string
 }
 
@@ -18,6 +20,7 @@ type Item = {
   platform: string
   thumbnail: string
   duration?: number
+  clipDuration?: number | null
   drive: boolean
   entries: Entry[]
   selected: number[]
@@ -184,6 +187,8 @@ export default function App() {
   const [selected, setSelected] = useState<Record<string, number[]>>({})
 
   const [focus, setFocus] = useState(0)
+  const [clips, setClips] = useState<Record<string, Clip>>({})
+  const [clipErrors, setClipErrors] = useState<Record<string, boolean>>({})
 
   const generation = useRef(-1)
 
@@ -222,6 +227,8 @@ export default function App() {
           )
 
           setFocus(0)
+          setClips({})
+          setClipErrors({})
 
           generation.current = next.generation
         }
@@ -528,6 +535,22 @@ export default function App() {
                   )}
                   <h1>{item?.title}</h1>
                   <p>{item?.platform}</p>
+                  {!!item?.clipDuration && (
+                    <ClipRange
+                      key={`${state.generation}:${item.id}`}
+                      duration={item.clipDuration}
+                      clip={clips[item.id]}
+                      invalid={!!clipErrors[item.id]}
+                      setInvalid={(invalid) => setClipErrors((previous) => ({ ...previous, [item.id]: invalid }))}
+                      change={(clip) => setClips((previous) => {
+                        const next = { ...previous }
+                        if (clip) next[item.id] = clip
+                        else delete next[item.id]
+                        return next
+                      })}
+                      t={t}
+                    />
+                  )}
                 </section>
                 <section className="download-options">
                   {onlyDrive ? (
@@ -690,11 +713,12 @@ export default function App() {
           ) : (
             <button
               className="accent-button download-button"
-              disabled={!ready || busy || !selectedItems.length}
+              disabled={!ready || busy || !selectedItems.length || selectedItems.some((i) => clipErrors[i.id])}
               onClick={() =>
                 run("download", {
                   generation: state.generation,
                   selected,
+                  clips,
                   settings: { ...settings, media_format: format },
                 })
               }
@@ -749,6 +773,15 @@ export default function App() {
                     {t("Browse…", "Procurar…")}
                   </button>
                 </div>
+              </div>
+              <div className="settings-row">
+                <label className="clip-toggle">
+                  <input type="checkbox" disabled={busy}
+                    checked={settings.editor_compatibility}
+                    onChange={(e) => change("editor_compatibility", e.currentTarget.checked)} />
+                  {t("Editor compatibility (VEGAS)", "Compatibilidade com editores (VEGAS)")}
+                </label>
+                <small>{t("Convert MP4 video to H.264 and audio to AAC. May take longer.", "Converte o vídeo MP4 para H.264 e o áudio para AAC. Pode demorar mais.")}</small>
               </div>
               <div className="settings-row">
                 <strong>{t("Language", "Idioma")}</strong>

@@ -42,11 +42,15 @@ The app tests NVIDIA NVENC, Intel Quick Sync, and AMD AMF with a small real enco
 
 ## MP4 compatibility with VEGAS and other editors
 
-MP4 downloads are now converted automatically to H.264 High profile, 8-bit 4:2:0 video with constant frame rate and AAC-LC stereo audio at 48 kHz. Silent downloads use the same video conversion without an audio track. This also applies to direct links and playlists.
+Regular MP4 downloads keep the downloaded codecs by default. Enable **Editor compatibility (VEGAS)** in Settings to convert to H.264 High profile, 8-bit 4:2:0 video with constant frame rate and AAC-LC stereo audio at 48 kHz. This also applies to direct links and playlists.
 
 An MP4 extension alone does not guarantee compatible codecs: older downloads could contain AV1, VP9 or Opus. The app converts the streams even when the source is already MP4. Conversion takes extra time, needs space for a second copy, and may increase file size; it uses high-quality lossy encoding (CPU: CRF 18; GPU: encoder-specific quality settings). Wait for the conversion stage to finish. If it fails, the original download is kept and an error is shown.
 
-Previously downloaded files are not changed automatically. Download them again with this version, or back up an existing MP4 and run `python video_compat.py "path/to/video.mp4"` from the source installation. Add `--silent` to remove audio. Very old editors may still have resolution/frame-rate limits; choose a lower download quality if needed. HDR-to-SDR tone mapping is not included.
+Previously downloaded files are not changed automatically. Enable compatibility before downloading again, or back up an existing MP4 and run `python video_compat.py "path/to/video.mp4"` from the source installation. Add `--silent` to remove audio. Very old editors may still have resolution/frame-rate limits; choose a lower download quality if needed. HDR-to-SDR tone mapping is not included.
+
+## Download a clip
+
+Analyze a supported individual video with a known duration, then enable **Download a clip** below the preview. Drag the two handles or type the start and end timestamps. The app shows the selected length and reports progress while cutting. Cutting may re-encode media even with editor compatibility off.
 
 ## Spotify note
 

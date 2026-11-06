@@ -41,9 +41,13 @@ O logo e o nome originais BI3L foram preservados. A engrenagem fica no canto inf
 
 ## MP4 para VEGAS e outros editores
 
-O aplicativo converte todos os downloads MP4 para vídeo H.264 High, 8 bits, 4:2:0 e taxa de quadros constante, com áudio AAC-LC estéreo a 48 kHz. A opção sem áudio usa a mesma conversão de vídeo. Também funciona com links diretos e playlists.
+Por padrão, os downloads MP4 mantêm os codecs baixados. Se o seu editor não aceitar o arquivo, ative **Compatibilidade com editores (VEGAS)** nas configurações. Essa opção converte o vídeo para H.264 High, 8 bits, 4:2:0 e taxa de quadros constante, com áudio AAC-LC estéreo a 48 kHz. Também funciona com links diretos e playlists.
 
-Antes, um arquivo `.mp4` podia conter AV1, VP9 ou Opus, incompatíveis com alguns editores. A conversão agora ocorre mesmo quando o arquivo já é MP4. Ela demora mais, precisa de espaço para uma segunda cópia e pode aumentar o tamanho do arquivo. A codificação usa CRF 18 na CPU ou ajustes de qualidade específicos na GPU; há perda de qualidade. Aguarde a etapa de conversão terminar; em caso de falha, o download original é preservado e um erro é exibido.
+Um arquivo `.mp4` pode conter AV1, VP9 ou Opus, incompatíveis com alguns editores. Quando ativada, a conversão demora mais, precisa de espaço para uma segunda cópia e pode aumentar o tamanho do arquivo. A codificação usa CRF 18 na CPU ou ajustes de qualidade específicos na GPU; há perda de qualidade. Em caso de falha, o download original é preservado e um erro é exibido.
+
+## Baixar um trecho
+
+Depois de analisar um vídeo individual com duração conhecida, marque **Baixar um trecho**. Arraste as duas alças ou digite o início e o fim (por exemplo, `12:23` e `19:20`). A interface mostra a duração do trecho. O corte pode precisar de recodificação, mesmo com a compatibilidade com editores desativada.
 
 Arquivos antigos não são alterados automaticamente: baixe novamente com esta versão ou faça uma cópia de segurança e execute `python video_compat.py "caminho/para/video.mp4"` na instalação pelo código-fonte. Use `--silent` para remover o áudio. Editores antigos ainda podem limitar resolução e taxa de quadros. Não inclui mapeamento de tons HDR para SDR.
 

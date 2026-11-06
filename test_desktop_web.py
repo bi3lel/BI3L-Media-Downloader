@@ -41,6 +41,26 @@ class WebBridgeTests(unittest.TestCase):
         b.command("choose", {"id": snapshot["choice"]["id"], "index": 0})
         self.assertEqual(answers.get_nowait(), 0)
 
+    def test_clip_bounds_use_analyzed_duration_and_only_apply_to_selected_video(self):
+        b = self.bridge
+        b.items = [{"title": "Video", "duration": 1200.5},
+                   {"title": "Drive", "duration": 1200, "drive_files": [1]}]
+        self.assertEqual([item["clipDuration"] for item in b.snapshot()["items"]], [1200.5, None])
+        with patch.object(b, "launch") as launch, patch("desktop_web.save_settings"):
+            for index, bounds in [("0", [100, 50]), ("0", [0, 1201]), ("0", [False, 20]),
+                                  ("0", [4, 4.5]), ("0", [0, float("nan")]), ("1", [0, 20])]:
+                with self.subTest(index=index, bounds=bounds), self.assertRaises(ValueError):
+                    b.command("download", {"generation": 0, "selected": {index: []}, "clips": {index: bounds}})
+            launch.assert_not_called()
+            b.command("download", {"generation": 0, "selected": {"0": [], "1": []},
+                                   "clips": {"0": [743, 1160]},
+                                   "settings": {"editor_compatibility": True}})
+            _, job, _, settings = launch.call_args.args
+            self.assertEqual(job["queue_items"][0]["clip_range"], (743, 1160))
+            self.assertNotIn("clip_range", job["queue_items"][1])
+            self.assertNotIn("clip_range", b.items[0])
+            self.assertTrue(settings.editor_compatibility)
+
     def test_streaming_playlist_accumulates_and_finishes(self):
         b = self.bridge
         b.engine.events.put(("playlist_stream_started", {"playlist_entries": [{"index": 1}], "selected_indices": [1]}))

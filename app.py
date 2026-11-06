@@ -1683,11 +1683,14 @@ class MediaDownloader(ctk.CTk):
                 settings,
             )
         analysis_info = dict(info.get("analysis_info") or {})
+        clip_range = info.get("clip_range")
         analysis_time = float(info.get("analysis_time") or 0.0)
         if not analysis_time or time.time() - analysis_time > 900:
             analysis_info = {}
-        stage_key = "download.downloading_audio" if selected_format == "MP3" else "download.downloading_video"
-        self.events.put(("status", f"{display_title} · {self._t(stage_key)}"))
+        stage_key = ("download.cutting_clip" if clip_range else
+                     "download.downloading_audio" if selected_format == "MP3" else "download.downloading_video")
+        stage = self._t(stage_key)
+        self.events.put(("status", stage if clip_range else f"{display_title} · {stage}"))
         command = self._download_command(
             target,
             selected_format,
@@ -1698,6 +1701,7 @@ class MediaDownloader(ctk.CTk):
             media_id=str(info.get("media_id") or "video"),
             playlist_items=selected_indices,
             info_json=analysis_info,
+            clip_range=clip_range,
         )
         run_context = {
             "context_title": "" if is_playlist else display_title,
@@ -1715,9 +1719,15 @@ class MediaDownloader(ctk.CTk):
                 display_title=display_title,
                 media_id=str(info.get("media_id") or "video"),
                 playlist_items=selected_indices,
+                clip_range=clip_range,
             )
-        self._run_cached_or_fresh(command, fresh_command, **run_context)
-        if selected_format == "MP4" and settings.also_audio:
+        separate_audio = selected_format == "MP4" and settings.also_audio
+        clip_seconds = clip_range[1] - clip_range[0] if clip_range else 0
+        self._run_cached_or_fresh(
+            command, fresh_command, **run_context,
+            clip_progress=(clip_seconds, 0.0, 0.49 if separate_audio else 0.98) if clip_seconds else None,
+        )
+        if separate_audio:
             self.events.put(("status", self._t("download.creating_mp3")))
             audio_command = self._download_command(
                 target,
@@ -1730,6 +1740,7 @@ class MediaDownloader(ctk.CTk):
                 media_id=str(info.get("media_id") or "video"),
                 playlist_items=selected_indices,
                 info_json=analysis_info,
+                clip_range=clip_range,
             )
             fresh_audio_command = None
             if analysis_info:
@@ -1743,11 +1754,13 @@ class MediaDownloader(ctk.CTk):
                     display_title=display_title,
                     media_id=str(info.get("media_id") or "video"),
                     playlist_items=selected_indices,
+                    clip_range=clip_range,
                 )
             self._run_cached_or_fresh(
                 audio_command,
                 fresh_audio_command,
                 **run_context,
+                clip_progress=(clip_seconds, 0.49, 0.98) if clip_seconds else None,
             )
         return None
 
@@ -1759,6 +1772,7 @@ class MediaDownloader(ctk.CTk):
         context_title: str = "",
         context_index: int | None = None,
         context_count: int | None = None,
+        clip_progress: tuple[float, float, float] | None = None,
     ) -> None:
         try:
             self._run_yt_dlp(
@@ -1766,6 +1780,7 @@ class MediaDownloader(ctk.CTk):
                 context_title=context_title,
                 context_index=context_index,
                 context_count=context_count,
+                clip_progress=clip_progress,
             )
         except RuntimeError:
             if fresh_command is None:
@@ -1776,6 +1791,7 @@ class MediaDownloader(ctk.CTk):
                 context_title=context_title,
                 context_index=context_index,
                 context_count=context_count,
+                clip_progress=clip_progress,
             )
 
     def _download_direct_playlist_entries(
@@ -2210,6 +2226,7 @@ class MediaDownloader(ctk.CTk):
         output_template: str = "",
         playlist_items: list[int] | None = None,
         info_json: dict[str, Any] | None = None,
+        clip_range: tuple[float, float] | None = None,
     ) -> list[str]:
         executable = self._find_yt_dlp()
         if not executable:
@@ -2225,6 +2242,9 @@ class MediaDownloader(ctk.CTk):
             template = "%(playlist_title)s/%(playlist_index)03d - %(title)s [%(id)s].%(ext)s"
         else:
             template = settings.filename_template or "%(title)s [%(id)s].%(ext)s"
+        if clip_range is not None:
+            start, end = (f"{value:.3f}".rstrip("0").rstrip(".") for value in clip_range)
+            audio_suffix = f" [clip {start}s-{end}s]{audio_suffix}"
         if audio_suffix:
             stem, separator, extension = template.rpartition(".")
             template = f"{stem}{audio_suffix}.{extension}" if separator else f"{template}{audio_suffix}"
@@ -2255,6 +2275,11 @@ class MediaDownloader(ctk.CTk):
             *self._ffmpeg_arguments(),
         ]
 
+        if clip_range is not None:
+            command.extend([
+                "--no-playlist", "--download-sections", f"*{start}-{end}", "--force-keyframes-at-cuts",
+                "--downloader-args", "ffmpeg:-nostats -progress pipe:1",
+            ])
         if is_playlist:
             command.extend(["--yes-playlist", "--no-flat-playlist", "--no-abort-on-error"])
             if playlist_items:
@@ -2266,13 +2291,16 @@ class MediaDownloader(ctk.CTk):
             command.extend(["--audio-quality", f"{bitrate.group(1)}K" if bitrate else "0"])
         else:
             command.extend(["--remux-video", "mp4", "--merge-output-format", "mp4"])
-            if getattr(sys, "frozen", False):
-                helper_parts = [sys.executable, "--editor-mp4"]
-            else:
-                helper_parts = [sys.executable, str(Path(__file__).resolve().parent / "video_compat.py")]
-            if settings.video_no_audio:
-                helper_parts.append("--silent")
-            command.extend(["--exec", f"after_move:{subprocess.list2cmdline(helper_parts)} %(filepath)q"])
+            if settings.editor_compatibility or settings.video_no_audio:
+                editor = settings.editor_compatibility
+                if getattr(sys, "frozen", False):
+                    helper_parts = [sys.executable, "--editor-mp4" if editor else "--strip-audio"]
+                else:
+                    script = "video_compat.py" if editor else "strip_audio.py"
+                    helper_parts = [sys.executable, str(Path(__file__).resolve().parent / script)]
+                if editor and settings.video_no_audio:
+                    helper_parts.append("--silent")
+                command.extend(["--exec", f"after_move:{subprocess.list2cmdline(helper_parts)} %(filepath)q"])
             if settings.video_no_audio:
                 if not direct_media:
                     height = re.search(r"(\d+)", settings.video_quality)
@@ -2330,6 +2358,7 @@ class MediaDownloader(ctk.CTk):
         context_title: str = "",
         context_index: int | None = None,
         context_count: int | None = None,
+        clip_progress: tuple[float, float, float] | None = None,
     ) -> None:
         attempts = self._engine_attempt_paths(command[0])
         last_error: RuntimeError | None = None
@@ -2344,6 +2373,7 @@ class MediaDownloader(ctk.CTk):
                     context_title=context_title,
                     context_index=context_index,
                     context_count=context_count,
+                    clip_progress=clip_progress,
                 )
                 return
             except (RuntimeError, OSError) as exc:
@@ -2357,6 +2387,7 @@ class MediaDownloader(ctk.CTk):
         context_title: str = "",
         context_index: int | None = None,
         context_count: int | None = None,
+        clip_progress: tuple[float, float, float] | None = None,
     ) -> None:
         if self.cancel_event.is_set():
             raise InterruptedError()
@@ -2373,6 +2404,11 @@ class MediaDownloader(ctk.CTk):
         recent_lines: list[str] = []
         current_item: tuple[str, str] | None = None
         current_status_base = ""
+        if clip_progress:
+            # Leave room for final processing; only the completed job reaches 100%.
+            clip_seconds, clip_start, clip_end = clip_progress
+            clip_fraction = clip_start
+            clip_status = self._t("download.creating_mp3" if clip_start else "download.cutting_clip")
         assert self.current_process.stdout is not None
         for raw_line in self.current_process.stdout:
             line = raw_line.strip()
@@ -2385,7 +2421,20 @@ class MediaDownloader(ctk.CTk):
                 self.current_process = None
                 raise InterruptedError()
 
-            if PROGRESS_MARKER in line:
+            if clip_progress:
+                timestamp = re.fullmatch(r"out_time_us=(-?\d+)", line)
+                if timestamp:
+                    elapsed = int(timestamp[1]) / 1_000_000
+                    fraction = max(0.0, min(1.0, elapsed / clip_seconds))
+                    next_fraction = clip_start + fraction * (clip_end - clip_start)
+                    if next_fraction > clip_fraction:
+                        clip_fraction = next_fraction
+                        self.events.put(("progress", (clip_fraction, clip_status)))
+                    continue
+                if line == "progress=end":
+                    self.events.put(("progress", (clip_end, self._t("download.processing"))))
+                    continue
+            if not clip_progress and PROGRESS_MARKER in line:
                 progress_text = line.partition(PROGRESS_MARKER)[2]
                 fields = progress_text.split("\t", 7)
                 if len(fields) == 8:
@@ -2435,11 +2484,10 @@ class MediaDownloader(ctk.CTk):
                         )
                     continue
 
-            match = re.search(r"(\d+(?:\.\d+)?)%", line)
-            if match:
+            match = re.match(r"^\[(?:download|Drive)\]\s+(\d+(?:\.\d+)?)%(?:\s|$)", line)
+            if match and not clip_progress:
                 percentage = max(0.0, min(100.0, float(match.group(1))))
-                detail = line.replace("[download]", "").strip()
-                self.events.put(("progress", (percentage / 100, detail)))
+                self.events.put(("progress", (percentage / 100, f"{percentage:g}%")))
             elif "Merging formats" in line:
                 processing = self._t("download.merging")
                 status = f"{current_status_base} · {processing}" if current_status_base else processing
@@ -2456,8 +2504,8 @@ class MediaDownloader(ctk.CTk):
                 processing = self._t("download.processing")
                 status = f"{current_status_base} · {processing}" if current_status_base else processing
                 self.events.put(("status", status))
-            elif "Downloading item" in line:
-                self.events.put(("status", line.replace("[download]", "").strip()))
+            elif re.fullmatch(r"\[download\] Downloading item \d+ of \d+", line):
+                self.events.put(("status", line.removeprefix("[download] ")))
 
         return_code = self.current_process.wait()
         self.current_process = None

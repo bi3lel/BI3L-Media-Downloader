@@ -16,6 +16,7 @@ import threading
 import webbrowser
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from math import isfinite
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -24,6 +25,17 @@ from core import DownloadSettings, load_settings, save_settings, split_urls, ope
 
 VIDEO = ("Best", "2160p", "1440p", "1080p", "720p", "480p", "360p")
 AUDIO = ("Best", "320 kbps", "256 kbps", "192 kbps", "128 kbps")
+
+
+def clip_duration(item):
+    duration = item.get("duration")
+    if (type(duration) not in (int, float) or not 1 < duration <= 1e9
+            or item.get("is_playlist") or item.get("playlist_entries")
+            or item.get("drive_files") or item.get("platform") == "Spotify"
+            or (item.get("analysis_info") or {}).get("is_live")):
+        return None
+    duration = int(duration * 1000) / 1000
+    return duration if duration > 1 else None
 
 
 class Engine(MediaDownloader):
@@ -136,6 +148,7 @@ class Bridge:
                 items.append({"id": index, "title": item.get("title", ""),
                     "platform": item.get("platform", "Website"), "duration": item.get("duration"),
                     "drive": bool(item.get("drive_files")),
+                    "clipDuration": clip_duration(item),
                     "thumbnail": "data:image/jpeg;base64," + base64.b64encode(thumb).decode() if isinstance(thumb, bytes) and thumb else "",
                     "entries": [{"index": e["index"], "title": e.get("title", ""), "duration": e.get("duration")} for e in item.get("playlist_entries", [])],
                     "selected": item.get("selected_indices", [])})
@@ -157,7 +170,7 @@ class Bridge:
                 if data[key] not in allowed:
                     raise ValueError(f"Invalid {key}.")
                 setattr(settings, key, data[key])
-        for key in ("also_audio", "video_no_audio"):
+        for key in ("also_audio", "video_no_audio", "editor_compatibility"):
             if key in data:
                 if not isinstance(data[key], bool):
                     raise ValueError(f"Invalid {key}.")
@@ -243,11 +256,23 @@ class Bridge:
                 if data.get("generation") != self.generation or not self.items:
                     raise ValueError("Analyze the links before downloading.")
                 selected = data.get("selected", {})
+                clips = data.get("clips", {})
+                if not isinstance(clips, dict):
+                    raise ValueError("Invalid clip selection.")
                 items = []
                 for i, original in enumerate(self.items):
                     if str(i) not in selected:
                         continue
                     item = copy.copy(original)
+                    if str(i) in clips:
+                        bounds = clips[str(i)]
+                        duration = clip_duration(item)
+                        if (duration is None or not isinstance(bounds, list) or len(bounds) != 2
+                                or any(type(n) not in (int, float) or not 0 <= n <= duration
+                                       or not isfinite(n) for n in bounds)
+                                or round(bounds[1] - bounds[0], 9) < 1):
+                            raise ValueError("Choose a clip of at least one second within the video.")
+                        item["clip_range"] = tuple(bounds)
                     entries = item.get("playlist_entries", [])
                     if entries:
                         indices = selected[str(i)]

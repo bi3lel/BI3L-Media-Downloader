@@ -104,7 +104,7 @@ class PlaylistStreamTests(unittest.TestCase):
         self.assertEqual(result["title"], "Single video")
         self.assertTrue(downloader.events.empty())
 
-    def test_silent_mp4_uses_video_format_and_compatibility_helper(self):
+    def test_silent_mp4_defaults_to_audio_removal_without_conversion(self):
         downloader = MediaDownloader.__new__(MediaDownloader)
         downloader.language = "en"
         downloader._find_yt_dlp = lambda: "yt-dlp"
@@ -121,8 +121,8 @@ class PlaylistStreamTests(unittest.TestCase):
         self.assertEqual(command[command.index("-f") + 1], "bv*[height<=?1080]")
         self.assertIn("--remux-video", command)
         exec_value = command[command.index("--exec") + 1]
-        self.assertIn("video_compat.py", exec_value)
-        self.assertIn("--silent", exec_value)
+        self.assertIn("strip_audio.py", exec_value)
+        self.assertNotIn("video_compat.py", exec_value)
         self.assertNotIn("+ba", " ".join(command))
 
     def test_frozen_app_uses_internal_mp4_conversion_mode(self):
@@ -137,7 +137,7 @@ class PlaylistStreamTests(unittest.TestCase):
             command = downloader._download_command(
                 "https://youtube.com/watch?v=video",
                 "MP4",
-                DownloadSettings(video_quality="1080p", video_no_audio=True),
+                DownloadSettings(video_quality="1080p", video_no_audio=True, editor_compatibility=True),
             )
 
         exec_value = command[command.index("--exec") + 1]
@@ -145,7 +145,7 @@ class PlaylistStreamTests(unittest.TestCase):
         self.assertIn("--silent", exec_value)
         self.assertNotIn("video_compat.py", exec_value)
 
-    def test_all_mp4_routes_convert_but_mp3_does_not(self):
+    def test_mp4_conversion_is_opt_in_and_mp3_ignores_it(self):
         downloader = MediaDownloader.__new__(MediaDownloader)
         downloader._find_yt_dlp = lambda: "yt-dlp"
         downloader._js_runtime_arguments = lambda: []
@@ -159,12 +159,41 @@ class PlaylistStreamTests(unittest.TestCase):
                     )
                     self.assertIn("--remux-video", command)
                     self.assertNotIn("--ignore-errors", command)
+                    self.assertNotIn("--exec", command)
+                    command = downloader._download_command(
+                        "https://example.com/video", "MP4", DownloadSettings(editor_compatibility=True),
+                        direct_media=direct, is_playlist=playlist,
+                    )
                     helper = command[command.index("--exec") + 1]
                     self.assertTrue(helper.startswith("after_move:"))
                     self.assertIn("video_compat.py", helper)
                     self.assertNotIn("--silent", helper)
-        command = downloader._download_command("https://example.com/audio", "MP3", DownloadSettings())
+        command = downloader._download_command(
+            "https://example.com/audio", "MP3", DownloadSettings(editor_compatibility=True)
+        )
         self.assertNotIn("--exec", command)
+
+    def test_clip_progress_uses_media_time_and_ignores_encoder_logs(self):
+        downloader = MediaDownloader.__new__(MediaDownloader)
+        downloader.cancel_event = threading.Event()
+        downloader.events = queue.Queue()
+        downloader.language = "en"
+        process = FakeProcess([
+            "[libx264] frame P:17  Avg QP:23.20  skip: 2.1%\n",
+            "out_time_us=-1000\n",
+            "out_time_us=10000000\n",
+            "progress=continue\n",
+            "out_time_us=20000000\n",
+            "progress=end\n",
+        ])
+        with patch("app.subprocess.Popen", return_value=process):
+            downloader._run_yt_dlp_once(["yt-dlp"], clip_progress=(20, 0.49, 0.98))
+        events = list(downloader.events.queue)
+        self.assertEqual(events, [
+            ("progress", (0.735, translate("en", "download.creating_mp3"))),
+            ("progress", (0.98, translate("en", "download.creating_mp3"))),
+            ("progress", (0.98, translate("en", "download.processing"))),
+        ])
 
     def test_conversion_failure_is_reported_to_user(self):
         downloader = MediaDownloader.__new__(MediaDownloader)
